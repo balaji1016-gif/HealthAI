@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = "http://localhost:8081/api/patients";
+const BASE_URL = "https://healthai-nx8q.onrender.com/api";
 
 export const getPatients = async () => {
     const response = await axios.get(BASE_URL);
