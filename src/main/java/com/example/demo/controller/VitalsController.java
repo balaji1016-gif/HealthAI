@@ -12,7 +12,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/vitals")
-@CrossOrigin(origins = "http://localhost:5173") // Enables connection with your Vite/React frontend
+@CrossOrigin(origins = "https://health-ai-flame.vercel.app/") // Enables connection with your Vite/React frontend
 public class VitalsController {
 
     @Autowired
