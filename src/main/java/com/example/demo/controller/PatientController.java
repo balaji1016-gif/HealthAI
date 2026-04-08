@@ -14,7 +14,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/patients")
 // This line is CRITICAL to fix the "Blank Dashboard" issue
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "https://health-ai-flame.vercel.app/")
 public class PatientController {
 
     @Autowired
