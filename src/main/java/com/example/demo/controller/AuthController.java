@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "https://health-ai-flame.vercel.app/") // Allow frontend access
+@CrossOrigin(origins = "https://healthai-nx8q.onrender.com") // Allow frontend access
 public class AuthController {
 
     @Autowired
