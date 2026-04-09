@@ -11,7 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/appointments")
-@CrossOrigin(origins = "https://healthai-nx8q.onrender.com")
+@CrossOrigin(origins = "health-ai-flame.vercel.app")
 public class AppointmentController {
 
     @Autowired
