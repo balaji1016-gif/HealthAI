@@ -13,8 +13,8 @@ const DoctorDashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const pRes = await axios.get('http://localhost:8081/api/auth/patients');
-        const aRes = await axios.get('http://localhost:8081/api/appointments/all');
+        const pRes = await axios.get('https://healthai-nx8q.onrender.com/api/auth/patients');
+        const aRes = await axios.get('https://healthai-nx8q.onrender.com/api/appointments/all');
         setPatients(pRes.data);
         setAppointments(aRes.data);
       } catch (e) {
@@ -29,7 +29,7 @@ const DoctorDashboard = () => {
   const downloadReport = async (p) => {
     const loadId = toast.loading(`Generating report for ${p.fullName}...`);
     try {
-      const res = await axios.get(`http://localhost:8081/api/vitals/patient/${p.id}`);
+      const res = await axios.get(`https://healthai-nx8q.onrender.com/api/vitals/patient/${p.id}`);
       const doc = new jsPDF();
       doc.setFontSize(18);
       doc.text("Clinical Health Analysis", 14, 20);
@@ -51,7 +51,7 @@ const DoctorDashboard = () => {
 
   const approveApp = async (id) => {
     try {
-      await axios.post(`http://localhost:8081/api/appointments/approve/${id}`);
+      await axios.post(`https://healthai-nx8q.onrender.com/api/appointments/approve/${id}`);
       setAppointments(appointments.map(a => a.id === id ? {...a, status: 'APPROVED'} : a));
       toast.success("Appointment Confirmed");
     } catch (e) { toast.error("Error approving."); }
