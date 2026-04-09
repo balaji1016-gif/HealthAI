@@ -25,7 +25,7 @@ const PatientDashboard = () => {
     const loadId = toast.loading("AI analyzing vitals...");
 
     try {
-      const res = await axios.post('http://localhost:8081/api/vitals/add', {
+      const res = await axios.post('https://healthai-nx8q.onrender.com/api/vitals/add', {
         ...vitals, patientId: user.id
       });
       setAiInsight(res.data.aiInsight);
@@ -41,7 +41,7 @@ const PatientDashboard = () => {
   const handleAppointment = async () => {
     if (!reason) return toast.error("Please enter a reason");
     try {
-      await axios.post('http://localhost:8081/api/appointments/request', {
+      await axios.post('https://healthai-nx8q.onrender.com/api/appointments/request', {
         patientId: user.id, patientName: user.fullName, reason: reason
       });
       toast.success("Consultation Request Sent!");
