@@ -13,7 +13,7 @@ const Home = () => {
     e.preventDefault();
     try {
       const endpoint = isLogin ? 'login' : 'register';
-      const response = await axios.post(`http://localhost:8081/api/auth/${endpoint}`, { email, password, role });
+      const response = await axios.post(`https://healthai-nx8q.onrender.com/api/auth/${endpoint}`, { email, password, role });
 
       if (isLogin) {
         localStorage.setItem("user", JSON.stringify(response.data));
