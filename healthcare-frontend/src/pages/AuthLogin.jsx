@@ -24,6 +24,7 @@ const AuthLogin = () => {
       toast.success("Login Successful!");
       
       // Navigate based on role from your Java backend
+      const userRole = role.toUpperCase();
       if (role === 'PATIENT') {
         navigate('/patient-dashboard');
       } else {
