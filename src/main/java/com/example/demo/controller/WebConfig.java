@@ -10,9 +10,9 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins("https://health-ai-flame.vercel.app")
+                .allowedOrigins("https://health-ai-flame.vercel.app") // Your Vercel URL
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true);
     }
-} // <--- MAKE SURE THIS BRACE EXISTS!
+}
