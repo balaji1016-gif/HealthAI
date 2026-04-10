@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import API from '../api';
-import toast from 'react-hot-toast';
 
 const PatientDashboard = () => {
   const [user, setUser] = useState(null);
@@ -9,10 +8,12 @@ const PatientDashboard = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await API.get('/auth/me');
+        const email = localStorage.getItem('userEmail');
+        // We pass the email as a query parameter to match the Java @RequestParam
+        const res = await API.get(`/auth/me?email=${email}`);
         setUser(res.data);
       } catch (err) {
-        setUser({ fullName: "Patient", bloodPressure: "N/A", heartRate: 0 });
+        console.error("Fetch failed", err);
       } finally {
         setLoading(false);
       }
@@ -20,24 +21,25 @@ const PatientDashboard = () => {
     fetchProfile();
   }, []);
 
-  if (loading) return <div style={{textAlign:'center', marginTop:'50px'}}>Loading...</div>;
+  if (loading) return <div style={{textAlign:'center', padding:'50px'}}>Loading Health Profile...</div>;
 
   return (
-    <div style={{ padding: '20px', backgroundColor: '#f8fafc', minHeight: '100vh' }}>
-      <header style={{ marginBottom: '30px', display: 'flex', justifyContent: 'space-between' }}>
-        <h1>Welcome, {user?.fullName}</h1>
-        <button onClick={() => { localStorage.clear(); window.location.href = '/login'; }}>Logout</button>
+    <div style={{ padding: '30px' }}>
+      <header style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #ccc', pb: '10px' }}>
+        <h1>Welcome, {user?.fullName || "Patient"}</h1>
+        <button onClick={() => { localStorage.clear(); window.location.href='/'; }}>Logout</button>
       </header>
 
-      <div style={{ display: 'grid', gap: '20px', gridTemplateColumns: '1fr 1fr' }}>
-        <div style={{ background: '#fff', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+      <div style={{ marginTop: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+        <div style={{ padding: '20px', background: '#fff', borderRadius: '8px', boxShadow: '0 2px 5px #ddd' }}>
           <h3>Vitals</h3>
-          <p>BP: {user?.bloodPressure}</p>
-          <p>Heart Rate: {user?.heartRate} BPM</p>
+          <p><strong>Blood Pressure:</strong> {user?.bloodPressure || 'N/A'}</p>
+          <p><strong>Heart Rate:</strong> {user?.heartRate || 0} BPM</p>
         </div>
-        <div style={{ background: '#fff', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-          <h3>AI Summary</h3>
-          <p>{user?.diagnosisSummary || "No reports found."}</p>
+        
+        <div style={{ padding: '20px', background: '#fff', borderRadius: '8px', boxShadow: '0 2px 5px #ddd' }}>
+          <h3>AI Diagnosis</h3>
+          <p>{user?.diagnosisSummary || "No AI notes available."}</p>
         </div>
       </div>
     </div>
