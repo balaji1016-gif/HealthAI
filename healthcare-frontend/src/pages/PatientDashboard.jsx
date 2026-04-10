@@ -42,7 +42,7 @@ const PatientDashboard = () => {
     if (!reason) return toast.error("Please enter a reason");
     try {
       await axios.post('https://healthai-nx8q.onrender.com/api/appointments/request', {
-        patientId: user.id, patientName: user.fullName, reason: reason
+        patientId: user.id, patientName: user.Name, reason: reason
       });
       toast.success("Consultation Request Sent!");
       setReason('');
