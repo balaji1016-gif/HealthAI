@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 const Register = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    fullName: '',
+    name: '',
     email: '',
     password: '',
     age: '',
