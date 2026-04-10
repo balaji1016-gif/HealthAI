@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import API from '../api';
+import API from '../api'; // Ensure 'api.js' is in your services folder
 import toast from 'react-hot-toast';
 
 const AuthLogin = () => {
@@ -13,38 +13,62 @@ const AuthLogin = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const load = toast.loading("Logging in...");
     try {
-      const res = await API.post('/auth/login', credentials);
+      const response = await API.post('/auth/login', credentials);
+      const { token, role } = response.data;
+
+      // Store Auth Data
+      localStorage.setItem('token', token);
+      localStorage.setItem('role', role);
+
+      toast.success("Login Successful!");
       
-      // Save data for the Dashboard to use
-      localStorage.setItem('token', res.data.id); // Or actual JWT
-      localStorage.setItem('role', res.data.role);
-      localStorage.setItem('userEmail', res.data.email); 
-
-      toast.success("Welcome back!", { id: load });
-
-      // Direct redirect
-      window.location.href = res.data.role === 'DOCTOR' ? '/doctor-dashboard' : '/patient-dashboard';
-    } catch (err) {
-      toast.error("Login failed", { id: load });
+      // Navigate based on role from your Java backend
+      const userRole = role.toUpperCase();
+      if (role === 'PATIENT') {
+        navigate('/patient-dashboard');
+      } else {
+        navigate('/doctor-dashboard');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Invalid Credentials");
     }
   };
 
   return (
-    <div style={{ padding: '50px', textAlign: 'center' }}>
-      <h2>HealthAI Login</h2>
-      <form onSubmit={handleSubmit} style={{ display: 'inline-block', textAlign: 'left' }}>
-        <label htmlFor="email">Email</label><br/>
-        <input id="email" name="email" type="email" autoComplete="email" onChange={handleChange} required /><br/><br/>
-        
-        <label htmlFor="password">Password</label><br/>
-        <input id="password" name="password" type="password" autoComplete="current-password" onChange={handleChange} required /><br/><br/>
-        
-        <button type="submit">Sign In</button>
-      </form>
+    <div style={styles.container}>
+      <div style={styles.card}>
+        <h2 style={styles.title}>Welcome Back</h2>
+        <p style={styles.subtitle}>Sign in to your HealthAI Portal</p>
+        <form onSubmit={handleSubmit}>
+          <div style={styles.inputGroup}>
+            <label>Email Address</label>
+            <input type="email" name="email" onChange={handleChange} required style={styles.input} />
+          </div>
+          <div style={styles.inputGroup}>
+            <label>Password</label>
+            <input type="password" name="password" onChange={handleChange} required style={styles.input} />
+          </div>
+          <button type="submit" style={styles.button}>SIGN IN</button>
+        </form>
+        <p style={styles.footer}>
+          New user? <span onClick={() => navigate('/register')} style={styles.link}>Register here</span>
+        </p>
+      </div>
     </div>
   );
+};
+
+const styles = {
+  container: { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#f0f4f8' },
+  card: { background: '#fff', padding: '40px', borderRadius: '12px', boxShadow: '0 8px 30px rgba(0,0,0,0.1)', width: '100%', maxWidth: '400px' },
+  title: { textAlign: 'center', margin: '0 0 10px 0', color: '#333' },
+  subtitle: { textAlign: 'center', color: '#666', marginBottom: '20px' },
+  inputGroup: { marginBottom: '15px' },
+  input: { width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ddd', boxSizing: 'border-box' },
+  button: { width: '100%', padding: '12px', backgroundColor: '#3182ce', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' },
+  footer: { marginTop: '20px', textAlign: 'center', fontSize: '14px' },
+  link: { color: '#3182ce', cursor: 'pointer', fontWeight: 'bold' }
 };
 
 export default AuthLogin;
