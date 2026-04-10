@@ -1,25 +1,41 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast'; // Import Toaster
+import { Toaster } from 'react-hot-toast';
+
+// Pages
 import Home from './pages/Home';
 import Register from './pages/Register';
+import Login from './pages/Login';
 import PatientDashboard from './pages/PatientDashboard';
 import DoctorDashboard from './pages/DoctorDashboard';
+
+// Components
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
     <Router>
-      {/* Professional Toast Notifications */}
+      {/* Global Notification System */}
       <Toaster
         position="top-right"
         toastOptions={{
           duration: 4000,
-          style: { borderRadius: '16px', background: '#333', color: '#fff' }
+          style: { 
+            borderRadius: '12px', 
+            background: '#333', 
+            color: '#fff',
+            fontSize: '14px'
+          }
         }}
       />
+
       <Routes>
+        {/* Public Access Routes */}
         <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+
+        {/* Secure Patient Routes */}
         <Route
           path="/patient-dashboard"
           element={
@@ -28,6 +44,8 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* Secure Doctor Routes */}
         <Route
           path="/doctor-dashboard"
           element={
@@ -36,6 +54,8 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* Security Fallback: Redirect invalid URLs to Home */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
