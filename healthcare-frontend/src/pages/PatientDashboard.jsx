@@ -1,52 +1,76 @@
 import React, { useState, useEffect } from 'react';
-import API from '../api';
+import API from '../api'; // Ensure this points to your axios config
+import toast from 'react-hot-toast';
 
 const PatientDashboard = () => {
-  const [user, setUser] = useState(null); // Initially null
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        // Replace with your actual profile endpoint (e.g., /api/patients/me)
-        const res = await API.get('/auth/me'); 
+        // Attempting to fetch the profile from your Spring Boot backend
+        const res = await API.get('/auth/me');
         setUser(res.data);
       } catch (err) {
-        console.error("Fetch error:", err);
+        console.error("Profile fetch failed (404):", err);
+        
+        // FALLBACK: If your backend endpoint isn't ready, 
+        // we use data from localStorage or dummy data to prevent a crash.
+        const savedRole = localStorage.getItem('role');
+        setUser({
+          fullName: "Valued Patient", // Fallback name
+          email: "Data Syncing...",
+          role: savedRole || "PATIENT",
+          bloodPressure: "--/--",
+          heartRate: 0,
+          diagnosisSummary: "Waiting for backend synchronization..."
+        });
+
+        toast.error("Profile data not found on server. Using local session.");
       } finally {
         setLoading(false);
       }
     };
+
     fetchProfile();
   }, []);
 
-  // --- THE FIX ---
-  // This prevents the "Cannot read properties of null" error
+  // 1. LOADING GUARD: Prevents "Cannot read properties of null"
   if (loading) {
-    return <div style={styles.loading}>Loading Health Profile...</div>;
+    return (
+      <div style={styles.loadingContainer}>
+        <div style={styles.spinner}></div>
+        <p>Fetching your health records...</p>
+      </div>
+    );
   }
 
   return (
     <div style={styles.container}>
-      <h1>Patient Dashboard</h1>
-      {/* Use Optional Chaining (?.) for extra safety */}
-      <div style={styles.card}>
-        <h3>Welcome, {user?.fullName}</h3> 
-        <p><strong>Email:</strong> {user?.email}</p>
-        <p><strong>Age:</strong> {user?.age}</p>
-        <p><strong>Blood Pressure:</strong> {user?.bloodPressure}</p>
-        <hr />
-        <h4>AI Diagnosis Summary</h4>
-        <p>{user?.diagnosisSummary || "No AI notes yet."}</p>
-      </div>
-    </div>
-  );
-};
+      <nav style={styles.navbar}>
+        <h2 style={styles.logo}>HealthAI</h2>
+        <button onClick={() => { localStorage.clear(); window.location.href = '/login'; }} style={styles.logoutBtn}>
+          Logout
+        </button>
+      </nav>
 
-const styles = {
-  loading: { display: 'flex', justifyContent: 'center', marginTop: '50px', fontSize: '20px' },
-  container: { padding: '20px', maxWidth: '800px', margin: '0 auto' },
-  card: { padding: '20px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#fff' }
-};
+      <main style={styles.main}>
+        <header style={styles.header}>
+          {/* 2. OPTIONAL CHAINING: user?.fullName protects the UI */}
+          <h1>Welcome, {user?.fullName || "User"}</h1>
+          <p style={styles.date}>{new Date().toLocaleDateString()} | Patient Portal</p>
+        </header>
 
-export default PatientDashboard;
+        <div style={styles.grid}>
+          {/* Vitals Card */}
+          <div style={styles.card}>
+            <h3>Current Vitals</h3>
+            <div style={styles.vitalsRow}>
+              <span>Blood Pressure:</span>
+              <strong style={styles.value}>{user?.bloodPressure || "N/A"}</strong>
+            </div>
+            <div style={styles.vitalsRow}>
+              <span>Heart Rate:</span>
+              <strong style={styles.value}>{user?.heartRate || 0} BPM</strong>
+            </div>
