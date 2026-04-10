@@ -17,7 +17,7 @@ public class Patient {
     private String id;
 
     @Column(nullable = false)
-    private String name;
+    private String fullName;
 
     @Column(unique = true, nullable = false)
     private String email;
