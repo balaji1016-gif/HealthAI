@@ -1,29 +1,41 @@
 package com.example.demo.patient;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
-import java.util.UUID;
+import lombok.NoArgsConstructor;
+
 @Entity
-@Data // This automatically creates getters and setters
+@Table(name = "patients") // Good practice to name the table
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Patient {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
-    
+
+    @Column(nullable = false)
     private String name;
+
+    @Column(unique = true, nullable = false)
+    private String email;
+
+    @Column(nullable = false)
+    private String password;
+
+    private int age;
+
     private String bloodPressure;
+
     private int heartRate;
-    private String diagnosisSummary; // This is where AI will save its notes
 
-    public Object getAge() {
-        return null;
-    }
+    @Column(columnDefinition = "TEXT")
+    private String medicalHistory;
 
-    public Object getMedicalHistory() {
-        return getObject();
-    }
+    @Column(columnDefinition = "TEXT")
+    private String diagnosisSummary; // AI-generated notes storage
 
-    private static Object getObject() {
-        return null;
-    }
+    private String role = "PATIENT"; // Default role for security filters
 }
