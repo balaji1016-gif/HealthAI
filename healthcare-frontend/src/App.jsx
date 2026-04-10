@@ -5,7 +5,7 @@ import { Toaster } from 'react-hot-toast';
 // Pages
 import Home from './pages/Home';
 import register from './pages/register';
-import Login from './pages/Login';
+import AuthLogin from './pages/AuthLogin';
 import PatientDashboard from './pages/PatientDashboard';
 import DoctorDashboard from './pages/DoctorDashboard';
 
@@ -32,7 +32,7 @@ function App() {
       <Routes>
         {/* Public Access Routes */}
         <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={<AuthLogin />} />
         <Route path="/register" element={<Register />} />
 
         {/* Secure Patient Routes */}
