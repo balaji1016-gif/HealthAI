@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import API from '../src/api'; // Ensure 'api.js' is in your services folder
 import toast from 'react-hot-toast';
 
-const Login = () => {
+const AuthLogin = () => {
   const navigate = useNavigate();
   const [credentials, setCredentials] = useState({ email: '', password: '' });
 
@@ -70,4 +70,4 @@ const styles = {
   link: { color: '#3182ce', cursor: 'pointer', fontWeight: 'bold' }
 };
 
-export default Login;
+export default AuthLogin;
