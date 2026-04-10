@@ -57,7 +57,7 @@ const PatientDashboard = () => {
         <header className="bg-white border p-6 rounded-3xl flex justify-between items-center mb-8 shadow-sm">
           <div>
             <h1 className="text-2xl font-black text-slate-900">Patient Hub</h1>
-            <p className="text-xs text-blue-600 font-bold uppercase tracking-widest">Active Session: {user.fullName}</p>
+            <p className="text-xs text-blue-600 font-bold uppercase tracking-widest">Active Session: {user?.fullName || "Patient"}</p>
           </div>
           <button onClick={() => {localStorage.clear(); window.location.href='/';}} className="bg-slate-100 text-slate-500 px-6 py-2 rounded-xl font-bold text-sm hover:bg-red-50 hover:text-red-500 transition">Logout</button>
         </header>
