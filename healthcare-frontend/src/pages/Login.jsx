@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import API from '../services/api'; // Ensure 'api.js' is in your services folder
+import API from '../services/api.js'; // Ensure 'api.js' is in your services folder
 import toast from 'react-hot-toast';
 
 const Login = () => {
