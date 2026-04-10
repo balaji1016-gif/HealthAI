@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import API from '../api'; // Ensure this points to your axios config
+import API from '../api';
 import toast from 'react-hot-toast';
 
 const PatientDashboard = () => {
@@ -9,68 +9,39 @@ const PatientDashboard = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        // Attempting to fetch the profile from your Spring Boot backend
         const res = await API.get('/auth/me');
         setUser(res.data);
       } catch (err) {
-        console.error("Profile fetch failed (404):", err);
-        
-        // FALLBACK: If your backend endpoint isn't ready, 
-        // we use data from localStorage or dummy data to prevent a crash.
-        const savedRole = localStorage.getItem('role');
-        setUser({
-          fullName: "Valued Patient", // Fallback name
-          email: "Data Syncing...",
-          role: savedRole || "PATIENT",
-          bloodPressure: "--/--",
-          heartRate: 0,
-          diagnosisSummary: "Waiting for backend synchronization..."
-        });
-
-        toast.error("Profile data not found on server. Using local session.");
+        setUser({ fullName: "Patient", bloodPressure: "N/A", heartRate: 0 });
       } finally {
         setLoading(false);
       }
     };
-
     fetchProfile();
   }, []);
 
-  // 1. LOADING GUARD: Prevents "Cannot read properties of null"
-  if (loading) {
-    return (
-      <div style={styles.loadingContainer}>
-        <div style={styles.spinner}></div>
-        <p>Fetching your health records...</p>
-      </div>
-    );
-  }
+  if (loading) return <div style={{textAlign:'center', marginTop:'50px'}}>Loading...</div>;
 
   return (
-    <div style={styles.container}>
-      <nav style={styles.navbar}>
-        <h2 style={styles.logo}>HealthAI</h2>
-        <button onClick={() => { localStorage.clear(); window.location.href = '/login'; }} style={styles.logoutBtn}>
-          Logout
-        </button>
-      </nav>
+    <div style={{ padding: '20px', backgroundColor: '#f8fafc', minHeight: '100vh' }}>
+      <header style={{ marginBottom: '30px', display: 'flex', justifyContent: 'space-between' }}>
+        <h1>Welcome, {user?.fullName}</h1>
+        <button onClick={() => { localStorage.clear(); window.location.href = '/login'; }}>Logout</button>
+      </header>
 
-      <main style={styles.main}>
-        <header style={styles.header}>
-          {/* 2. OPTIONAL CHAINING: user?.fullName protects the UI */}
-          <h1>Welcome, {user?.fullName || "User"}</h1>
-          <p style={styles.date}>{new Date().toLocaleDateString()} | Patient Portal</p>
-        </header>
+      <div style={{ display: 'grid', gap: '20px', gridTemplateColumns: '1fr 1fr' }}>
+        <div style={{ background: '#fff', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+          <h3>Vitals</h3>
+          <p>BP: {user?.bloodPressure}</p>
+          <p>Heart Rate: {user?.heartRate} BPM</p>
+        </div>
+        <div style={{ background: '#fff', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+          <h3>AI Summary</h3>
+          <p>{user?.diagnosisSummary || "No reports found."}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
 
-        <div style={styles.grid}>
-          {/* Vitals Card */}
-          <div style={styles.card}>
-            <h3>Current Vitals</h3>
-            <div style={styles.vitalsRow}>
-              <span>Blood Pressure:</span>
-              <strong style={styles.value}>{user?.bloodPressure || "N/A"}</strong>
-            </div>
-            <div style={styles.vitalsRow}>
-              <span>Heart Rate:</span>
-              <strong style={styles.value}>{user?.heartRate || 0} BPM</strong>
-            </div>
+export default PatientDashboard;
