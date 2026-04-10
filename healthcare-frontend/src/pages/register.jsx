@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import API from '../src/api.js';
+import API from '../src/api';
 import toast from 'react-hot-toast';
 
 const Register = () => {
