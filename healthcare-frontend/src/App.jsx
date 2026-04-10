@@ -4,7 +4,7 @@ import { Toaster } from 'react-hot-toast';
 
 // Pages
 import Home from './pages/Home';
-import Register from './pages/Register';
+import register from './pages/register';
 import Login from './pages/Login';
 import PatientDashboard from './pages/PatientDashboard';
 import DoctorDashboard from './pages/DoctorDashboard';
