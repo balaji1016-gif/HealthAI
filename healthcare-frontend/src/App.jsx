@@ -2,60 +2,63 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
-// Pages
-import Home from './pages/Home';
-import Register from './pages/register';
+// Import your components (Ensure filenames match your project exactly)
 import AuthLogin from './pages/AuthLogin';
+import Register from './pages/register';
 import PatientDashboard from './pages/PatientDashboard';
 import DoctorDashboard from './pages/DoctorDashboard';
+import Home from './pages/Home';
 
-// Components
-import ProtectedRoute from './components/ProtectedRoute';
+// Protected Route Component
+// This prevents users from typing /patient-dashboard in the URL without logging in
+const ProtectedRoute = ({ children, allowedRole }) => {
+  const token = localStorage.getItem('token');
+  const role = localStorage.getItem('role');
+
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (allowedRole && role?.toUpperCase() !== allowedRole.toUpperCase()) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+};
 
 function App() {
   return (
     <Router>
-      {/* Global Notification System */}
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          style: { 
-            borderRadius: '12px', 
-            background: '#333', 
-            color: '#fff',
-            fontSize: '14px'
-          }
-        }}
-      />
-
+      {/* Toast notifications will appear globally */}
+      <Toaster position="top-right" reverseOrder={false} />
+      
       <Routes>
-        {/* Public Access Routes */}
+        {/* Public Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<AuthLogin />} />
         <Route path="/register" element={<Register />} />
 
-        {/* Secure Patient Routes */}
-        <Route
-          path="/patient-dashboard"
+        {/* Protected Patient Route */}
+        <Route 
+          path="/patient-dashboard" 
           element={
             <ProtectedRoute allowedRole="PATIENT">
               <PatientDashboard />
             </ProtectedRoute>
-          }
+          } 
         />
 
-        {/* Secure Doctor Routes */}
-        <Route
-          path="/doctor-dashboard"
+        {/* Protected Doctor Route */}
+        <Route 
+          path="/doctor-dashboard" 
           element={
             <ProtectedRoute allowedRole="DOCTOR">
               <DoctorDashboard />
             </ProtectedRoute>
-          }
+          } 
         />
 
-        {/* Security Fallback: Redirect invalid URLs to Home */}
+        {/* Catch-all: redirect unknown URLs to Home */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
