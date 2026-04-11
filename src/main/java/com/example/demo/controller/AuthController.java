@@ -1,4 +1,4 @@
-package com.example.demo.auth;
+package com.example.demo.controller;
 
 import com.example.demo.patient.Patient;
 import com.example.demo.PatientRepository;
