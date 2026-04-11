@@ -9,35 +9,47 @@ const Dashboard = () => {
   const [loadingAi, setLoadingAi] = useState(false);
 
   useEffect(() => {
-    // 1. Get user data from localStorage (saved during login)
     const user = JSON.parse(localStorage.getItem('user'));
     
+    // CHANGE: Instead of just relying on localStorage, 
+    // we fetch fresh data from the server using the stored email.
     if (user && user.email) {
-      // In a single-user dashboard, we show the logged-in user's card
-      // If your backend getPatients() returns a list, use that instead.
-      setPatients([user]); 
-    } else {
-      // Fallback: Fetch from backend if localStorage is empty
-      getPatients()
+      getPatients(user.email) // Pass the email to get fresh vitals
         .then(res => {
-          const data = Array.isArray(res.data) ? res.data : [res.data];
-          setPatients(data);
+          // If the server returns a single patient, put it in an array
+          const freshData = Array.isArray(res.data) ? res.data : [res.data];
+          setPatients(freshData);
+          // Update localStorage with any fresh data (like BP/HR)
+          localStorage.setItem('user', JSON.stringify(freshData[0]));
         })
-        .catch(() => toast.error("Failed to load patient data"));
+        .catch(() => {
+          // Fallback to localStorage if server is slow
+          setPatients([user]);
+        });
     }
   }, []);
 
   const handleAiCheck = async (email) => {
+    // SECURITY CHECK: If email is missing, don't even try the call
+    if (!email) {
+      toast.error("User email missing. Please re-login.");
+      return;
+    }
+
     setAnalysis("AI is analyzing your vitals...");
     setLoadingAi(true);
     try {
-      // 2. We pass 'email' because your Java @Id is now email
       const res = await getAiAssessment(email);
       
-      // 3. Match the backend key "summary" from our AuthController
-      setAnalysis(res.data.summary);
-      toast.success("AI Analysis Complete");
+      // Match the backend key "summary"
+      if (res.data && res.data.summary) {
+        setAnalysis(res.data.summary);
+        toast.success("AI Analysis Complete");
+      } else {
+        throw new Error("Invalid Response");
+      }
     } catch (err) {
+      console.error("AI Fetch Error:", err);
       setAnalysis("Connection Error: Could not reach the AI Diagnostic Service.");
       toast.error("AI Service Unavailable");
     } finally {
@@ -53,7 +65,6 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {patients.map(patient => (
-          // Use email as key since id is now null in your DB
           <div key={patient.email} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
             <div className="flex justify-between items-start mb-4">
               <h2 className="text-lg font-semibold text-gray-700">{patient.name}</h2>
@@ -93,4 +104,13 @@ const Dashboard = () => {
             <BrainCircuit className="text-indigo-600" size={20} />
             <h3 className="font-bold text-indigo-900">AI Clinical Insights</h3>
           </div>
-          <p className="text-gray-700 leading-relaxed bg-indigo-50 p-4 rounded-lg border
+          <p className="text-gray-700 leading-relaxed bg-indigo-50 p-4 rounded-lg border border-indigo-100 italic">
+            "{analysis}"
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Dashboard;
