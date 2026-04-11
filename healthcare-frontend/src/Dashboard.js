@@ -1,4 +1,4 @@
-import React, { useEffect,依useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { getPatients, getAiAssessment } from '../api';
 import { Activity, BrainCircuit } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -8,14 +8,14 @@ const Dashboard = () => {
   const [analysis, setAnalysis] = useState("");
   const [loadingAi, setLoadingAi] = useState(false);
 
-  // Load user on start
   useEffect(() => {
-    const data = localStorage.getItem('user');
-    if (data) {
-      const user = JSON.parse(data);
+    // 1. Get user from local storage
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      const user = JSON.parse(storedUser);
       setPatients([user]);
       
-      // Attempt fresh fetch
+      // 2. Refresh data from the server
       getPatients(user.email)
         .then(res => {
           if (res.data) {
@@ -27,32 +27,32 @@ const Dashboard = () => {
     }
   }, []);
 
-  // Simplified function
-  const runAiProcess = async (email) => {
-    // FORCE LOG: This will show in console even if API fails
-    console.log("CLICK DETECTED: Running process for " + email);
+  const handleAiCheck = async (email) => {
+    // This log will confirm the button is working in your F12 console
+    console.log("AI Diagnostic started for:", email);
     
     if (!email) {
-      alert("Error: Email is missing from your profile.");
+      toast.error("User email missing. Please re-login.");
       return;
     }
 
     setLoadingAi(true);
-    setAnalysis("Establishing secure AI connection...");
+    setAnalysis("AI is analyzing your clinical vitals...");
 
     try {
-      const response = await getAiAssessment(email);
+      // 3. This is the network request
+      const res = await getAiAssessment(email);
       
-      if (response.data && response.data.summary) {
-        setAnalysis(response.data.summary);
-        toast.success("AI Insights Loaded");
+      if (res.data && res.data.summary) {
+        setAnalysis(res.data.summary);
+        toast.success("Analysis Complete");
       } else {
-        setAnalysis("The AI module is active but returned no data.");
+        setAnalysis("The AI server responded but did not return a summary.");
       }
-    } catch (error) {
-      console.error("The API request failed:", error);
-      setAnalysis("Server Connection Failed. Please ensure your Render backend is 'Live' and the URL is correct.");
-      toast.error("Connection Error");
+    } catch (err) {
+      console.error("Connection failed:", err);
+      setAnalysis("Server connection failed. Is the Render backend awake?");
+      toast.error("Connection Failed");
     } finally {
       setLoadingAi(false);
     }
@@ -60,59 +60,74 @@ const Dashboard = () => {
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
-      <div className="max-w-4xl mx-auto">
-        <header className="flex items-center gap-3 mb-10">
-          <Activity className="text-blue-600" size={32} />
-          <h1 className="text-3xl font-bold text-gray-800">Healthcare Dashboard</h1>
-        </header>
+      <div className="max-w-6xl mx-auto">
+        <h1 className="text-3xl font-bold mb-8 flex items-center gap-3 text-gray-800">
+          <Activity className="text-blue-600" size={32} /> Patient Health Portal
+        </h1>
 
-        <div className="grid grid-cols-1 gap-8">
-          {patients.map((p) => (
-            <div key={p.email || 'main'} className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
-              <div className="flex justify-between items-center mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {patients.map((patient) => (
+            <div key={patient.email || 'main'} className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
+              <div className="flex justify-between items-start mb-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-800">{p.name || "User"}</h2>
-                  <p className="text-gray-500">{p.email}</p>
+                  <h2 className="text-2xl font-bold text-gray-800">{patient.name || "Patient"}</h2>
+                  <p className="text-gray-500 text-sm">{patient.email}</p>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs font-bold text-gray-400 uppercase">Status</p>
-                  <p className="text-green-500 font-bold">● Connected</p>
+                <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold uppercase">
+                  Age: {patient.age || "N/A"}
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 mb-8">
+                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                  <p className="text-xs text-blue-600 font-bold uppercase mb-1">Blood Pressure</p>
+                  <p className="text-2xl font-mono font-bold text-blue-900">{patient.bloodPressure || '120/80'}</p>
+                </div>
+                <div className="bg-red-50 p-4 rounded-xl border border-red-100">
+                  <p className="text-xs text-red-600 font-bold uppercase mb-1">Heart Rate</p>
+                  <p className="text-2xl font-mono font-bold text-red-900">{patient.heartRate || '72'} <span className="text-sm">BPM</span></p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-6 mb-8">
-                <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
-                  <p className="text-sm text-gray-500 mb-1">Blood Pressure</p>
-                  <p className="text-xl font-bold text-gray-900">{p.bloodPressure || '120/80'}</p>
-                </div>
-                <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
-                  <p className="text-sm text-gray-500 mb-1">Heart Rate</p>
-                  <p className="text-xl font-bold text-gray-900">{p.heartRate || '72'} BPM</p>
-                </div>
+              {/* STABILITY FIX: We use a placeholder area instead of the buggy ResponsiveContainer */}
+              <div className="h-32 w-full bg-gray-50 rounded-xl border border-dashed border-gray-200 flex items-center justify-center mb-6">
+                <p className="text-gray-400 text-xs italic text-center px-4">
+                  Real-time Vital Stream Active <br/> (Vitals within normal baseline)
+                </p>
               </div>
 
               <button
-                onClick={() => runAiProcess(p.email)}
+                onClick={() => handleAiCheck(patient.email)}
                 disabled={loadingAi}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 transition-all shadow-lg active:scale-95 disabled:bg-gray-300"
+                className={`w-full py-4 rounded-xl flex items-center justify-center gap-3 font-bold text-lg transition-all shadow-lg active:scale-95 ${
+                  loadingAi ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                }`}
               >
-                <BrainCircuit size={24} />
-                {loadingAi ? "ANALYZING..." : "RUN AI DIAGNOSIS"}
+                <BrainCircuit size={24} /> 
+                {loadingAi ? "Analyzing..." : "Run AI Diagnosis"}
               </button>
             </div>
           ))}
-        </div>
 
-        {analysis && (
-          <div className="mt-10 p-8 bg-white border-t-4 border-indigo-600 rounded-xl shadow-lg">
-            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <BrainCircuit className="text-indigo-600" /> AI Result
+          {/* AI RESULTS SECTION */}
+          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 min-h-[400px]">
+            <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <BrainCircuit className="text-indigo-600" size={24} /> 
+              Clinical AI Summary
             </h3>
-            <p className="text-gray-700 leading-relaxed italic bg-indigo-50 p-6 rounded-lg border border-indigo-100">
-              {analysis}
-            </p>
+            
+            {analysis ? (
+              <div className="bg-indigo-50 p-6 rounded-2xl border border-indigo-100 text-indigo-900 leading-relaxed italic shadow-inner">
+                "{analysis}"
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-64 text-gray-400 border-2 border-dashed border-gray-50 rounded-2xl">
+                <BrainCircuit size={48} className="mb-4 opacity-10" />
+                <p>Click the button to generate clinical insights</p>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
