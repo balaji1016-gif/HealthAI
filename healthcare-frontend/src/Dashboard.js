@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getPatients, getAiAssessment } from '../api';
-import { Activity, BrainCircuit, RefreshCw } from 'lucide-react';
+import { Activity, BrainCircuit } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Dashboard = () => {
@@ -8,127 +8,106 @@ const Dashboard = () => {
   const [analysis, setAnalysis] = useState("");
   const [loadingAi, setLoadingAi] = useState(false);
 
-  // 1. Force clear the view and reload fresh data
   useEffect(() => {
-    const init = () => {
-      const data = localStorage.getItem('user');
-      if (data) {
-        const user = JSON.parse(data);
-        setPatients([user]);
-        
-        // Immediate fetch from backend to ensure connection is live
-        getPatients(user.email)
-          .then(res => {
-            if (res.data) {
-              setPatients([res.data]);
-              localStorage.setItem('user', JSON.stringify(res.data));
-            }
-          })
-          .catch(() => console.log("Backend warming up..."));
-      }
-    };
-    init();
+    const data = localStorage.getItem('user');
+    if (data) {
+      const user = JSON.parse(data);
+      setPatients([user]);
+      
+      // Attempt to sync with backend
+      getPatients(user.email)
+        .then(res => {
+          if (res.data) {
+            setPatients([res.data]);
+            localStorage.setItem('user', JSON.stringify(res.data));
+          }
+        })
+        .catch(() => console.log("Backend warming up..."));
+    }
   }, []);
 
-  // 2. The most direct version of the AI call possible
-  const handleAiCall = async (email) => {
-    console.log("!!! ATTEMPTING AI CALL FOR: " + email);
+  const handleAiCheck = async (email) => {
+    // This will definitely show in the console if the click works
+    console.log("Button Clicked for email:", email);
     
     if (!email) {
-      alert("System Error: No email found in local storage.");
+      toast.error("Profile Error: Email not found.");
       return;
     }
 
     setLoadingAi(true);
-    setAnalysis("Connecting to Gemini AI via Render...");
+    setAnalysis("Connecting to AI diagnostic engine...");
 
     try {
-      // Direct call to your API.js function
       const res = await getAiAssessment(email);
-      
-      console.log("SERVER RESPONSE RECEIVED:", res.data);
+      console.log("Backend Response:", res.data);
 
       if (res.data && res.data.summary) {
         setAnalysis(res.data.summary);
-        toast.success("AI Analysis Complete");
+        toast.success("Analysis Complete");
       } else {
-        setAnalysis("The server responded but the AI summary was empty.");
+        setAnalysis("AI service is online but returned no summary.");
       }
     } catch (err) {
-      console.error("NETWORK ERROR:", err);
-      setAnalysis("Server Connection Failed. 1. Check if Render is 'Live'. 2. Check your internet. 3. Try again in 1 minute.");
-      toast.error("Connection Failed");
+      console.error("Connection Failed:", err);
+      setAnalysis("Server Connection Failed. Please ensure your Render backend is 'Live'.");
+      toast.error("Connection Error");
     } finally {
       setLoadingAi(false);
     }
   };
 
   return (
-    <div className="p-8 bg-slate-50 min-h-screen font-sans">
+    <div className="p-8 bg-gray-50 min-h-screen">
       <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-10">
-          <h1 className="text-3xl font-black text-slate-800 flex items-center gap-3">
-            <Activity className="text-indigo-600" size={36} /> HEALTH DASHBOARD
-          </h1>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="p-2 text-slate-400 hover:text-indigo-600 transition-colors"
-            title="Force Refresh"
-          >
-            <RefreshCw size={20} />
-          </button>
-        </div>
+        <h1 className="text-2xl font-bold mb-8 flex items-center gap-2 text-gray-800">
+          <Activity className="text-blue-600" /> Patient Wellness Dashboard
+        </h1>
 
-        {patients.length > 0 ? (
-          patients.map((p) => (
-            <div key={p.email} className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100 mb-10">
-              <div className="bg-indigo-600 p-6 text-white">
-                <h2 className="text-2xl font-bold">{p.name || "Patient Profile"}</h2>
-                <p className="opacity-80 text-sm">{p.email}</p>
+        {patients.map((patient) => (
+          <div key={patient.email} className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 mb-8">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">{patient.name || "Patient"}</h2>
+                <p className="text-gray-500 text-sm">{patient.email}</p>
               </div>
-
-              <div className="p-8">
-                <div className="grid grid-cols-2 gap-6 mb-10">
-                  <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Blood Pressure</p>
-                    <p className="text-3xl font-mono font-bold text-slate-800">{p.bloodPressure || 'N/A'}</p>
-                  </div>
-                  <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Heart Rate</p>
-                    <p className="text-3xl font-mono font-bold text-slate-800">{p.heartRate || 'N/A'} <span className="text-lg">BPM</span></p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => handleAiCall(p.email)}
-                  disabled={loadingAi}
-                  className={`w-full py-5 rounded-2xl flex items-center justify-center gap-4 text-xl font-black transition-all transform active:scale-95 ${
-                    loadingAi 
-                      ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
-                      : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200 shadow-2xl'
-                  }`}
-                >
-                  <BrainCircuit size={28} />
-                  {loadingAi ? "ANALYZING DATA..." : "RUN AI DIAGNOSIS"}
-                </button>
+              <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase">
+                Age: {patient.age || "N/A"}
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 mb-8">
+              <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                <p className="text-xs text-blue-600 font-bold uppercase mb-1">Blood Pressure</p>
+                <p className="text-2xl font-mono font-bold text-blue-900">{patient.bloodPressure || '120/80'}</p>
+              </div>
+              <div className="bg-red-50 p-4 rounded-xl border border-red-100">
+                <p className="text-xs text-red-600 font-bold uppercase mb-1">Heart Rate</p>
+                <p className="text-2xl font-mono font-bold text-red-900">{patient.heartRate || '72'} BPM</p>
               </div>
             </div>
-          ))
-        ) : (
-          <div className="text-center p-20 bg-white rounded-3xl border border-dashed border-slate-200">
-            <p className="text-slate-400">No patient data found. Please log in again.</p>
+
+            <button
+              onClick={() => handleAiCheck(patient.email)}
+              disabled={loadingAi}
+              className={`w-full py-4 rounded-xl flex items-center justify-center gap-3 font-bold text-lg transition-all ${
+                loadingAi ? 'bg-gray-300 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg'
+              }`}
+            >
+              <BrainCircuit size={24} /> 
+              {loadingAi ? "ANALYZING..." : "RUN AI DIAGNOSIS"}
+            </button>
           </div>
-        )}
+        ))}
 
         {analysis && (
-          <div className="bg-white p-8 rounded-3xl shadow-xl border-t-8 border-indigo-600 animate-in fade-in zoom-in duration-300">
-            <div className="flex items-center gap-3 mb-4 text-indigo-600">
-              <BrainCircuit size={28} />
-              <h3 className="text-xl font-black uppercase tracking-tight">Clinical Insights</h3>
-            </div>
-            <div className="bg-slate-50 p-6 rounded-2xl text-slate-700 leading-relaxed text-lg border border-slate-100 italic">
-              "{analysis}"
-            </div>
+          <div className="mt-8 p-6 bg-white border-l-4 border-indigo-500 rounded-r-xl shadow-md animate-pulse">
+            <h3 className="font-bold text-indigo-900 mb-2 flex items-center gap-2">
+              <BrainCircuit size={20} /> AI Clinical Insights
+            </h3>
+            <p className="text-gray-700 leading-relaxed bg-indigo-50 p-4 rounded-lg border border-indigo-100 italic">
+              {analysis}
+            </p>
           </div>
         )}
       </div>
