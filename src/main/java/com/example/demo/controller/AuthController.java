@@ -20,9 +20,6 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Patient newPatient) {
         try {
-            // Log incoming data to Render console for debugging
-            System.out.println("Registering patient: " + newPatient.getEmail());
-
             if (newPatient.getEmail() == null || newPatient.getEmail().isEmpty()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Email is required.");
             }
@@ -35,24 +32,27 @@ public class AuthController {
             Patient savedPatient = patientRepository.save(newPatient);
             return ResponseEntity.status(HttpStatus.CREATED).body(savedPatient);
         } catch (Exception e) {
-            e.printStackTrace(); // This prints the error to Render logs
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                 .body("Database Error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Registration failed: " + e.getMessage());
         }
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Patient loginRequest) {
-        return patientRepository.findByEmail(loginRequest.getEmail())
-                .filter(p -> p.getPassword().equals(loginRequest.getPassword()))
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials."));
+        Optional<Patient> patient = patientRepository.findByEmail(loginRequest.getEmail());
+        if (patient.isPresent() && patient.get().getPassword().equals(loginRequest.getPassword())) {
+            return ResponseEntity.ok(patient.get());
+        }
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials.");
     }
 
+    // UPDATED THIS TO FIX "incompatible types" ERROR
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(@RequestParam String email) {
-        return patientRepository.findByEmail(email)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+        Optional<Patient> patient = patientRepository.findByEmail(email);
+        if (patient.isPresent()) {
+            return ResponseEntity.ok(patient.get());
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+        }
     }
 }
