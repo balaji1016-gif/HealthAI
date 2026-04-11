@@ -2,61 +2,59 @@ import React, { useEffect, useState } from 'react';
 import { getPatients, getAiAssessment } from '../api';
 import { Activity, BrainCircuit } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 
 const Dashboard = () => {
   const [patients, setPatients] = useState([]);
   const [analysis, setAnalysis] = useState("");
   const [loadingAi, setLoadingAi] = useState(false);
 
-  // Sample data for the chart to prevent it from being empty
-  const chartData = [
-    { name: 'Mon', hr: 72 },
-    { name: 'Tue', hr: 75 },
-    { name: 'Wed', hr: 71 },
-    { name: 'Thu', hr: 79 },
-    { name: 'Fri', hr: 74 },
-  ];
-
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user'));
-    
-    if (user && user.email) {
-      // We fetch fresh data from the server using the stored email.
+    // We try to load the user from local storage first
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      const user = JSON.parse(storedUser);
+      setPatients([user]);
+      
+      // Then we try to get fresh data from the backend
       getPatients(user.email)
         .then(res => {
-          const freshData = Array.isArray(res.data) ? res.data : [res.data];
-          setPatients(freshData);
-          localStorage.setItem('user', JSON.stringify(freshData[0]));
+          if (res.data) {
+            setPatients([res.data]);
+            localStorage.setItem('user', JSON.stringify(res.data));
+          }
         })
-        .catch(() => {
-          setPatients([user]);
-        });
+        .catch(err => console.log("Fresh data fetch skipped, using local data."));
     }
   }, []);
 
   const handleAiCheck = async (email) => {
+    console.log("Button clicked! Attempting AI check for:", email);
+    
     if (!email) {
-      toast.error("User email missing. Please re-login.");
+      toast.error("Error: No email found for this user.");
       return;
     }
 
-    setAnalysis("AI is analyzing your vitals...");
     setLoadingAi(true);
+    setAnalysis("AI is connecting to your clinical data...");
+
     try {
+      // THIS IS THE CALL THAT SHOULD SHOW IN NETWORK TAB
+      console.log("Sending request to backend...");
       const res = await getAiAssessment(email);
       
-      // We check for 'summary' which is what our Java backend sends
+      console.log("Response received:", res.data);
+
       if (res.data && res.data.summary) {
         setAnalysis(res.data.summary);
-        toast.success("AI Analysis Complete");
+        toast.success("Analysis Complete");
       } else {
-        setAnalysis("AI service responded but no summary was generated.");
+        setAnalysis("The AI server responded but did not provide a summary.");
       }
     } catch (err) {
-      console.error("AI Fetch Error:", err);
-      setAnalysis("Connection Error: Could not reach the AI Diagnostic Service.");
-      toast.error("AI Service Unavailable");
+      console.error("The request failed completely:", err);
+      setAnalysis("Critical Connection Error: The request never left your browser or the server is down.");
+      toast.error("Server Connection Failed");
     } finally {
       setLoadingAi(false);
     }
@@ -69,62 +67,48 @@ const Dashboard = () => {
       </h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {patients.map(patient => (
-          <div key={patient.email} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+        {patients.map((patient) => (
+          <div key={patient.email || 'unique'} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
             <div className="flex justify-between items-start mb-4">
-              <h2 className="text-lg font-semibold text-gray-700">{patient.name}</h2>
+              <h2 className="text-lg font-semibold text-gray-700">{patient.name || "Patient"}</h2>
               <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold">
-                Age: {patient.age}
+                Age: {patient.age || "N/A"}
               </span>
             </div>
             
-            <div className="space-y-2 mb-4">
-              <p className="text-gray-600 text-sm flex justify-between">
+            <div className="space-y-2 mb-4 text-sm">
+              <div className="flex justify-between text-gray-600">
                 <span>Blood Pressure:</span> 
-                <span className="font-mono font-semibold text-blue-600">{patient.bloodPressure || 'N/A'}</span>
-              </p>
-              <p className="text-gray-600 text-sm flex justify-between">
+                <span className="font-bold text-blue-600">{patient.bloodPressure || '120/80'}</span>
+              </div>
+              <div className="flex justify-between text-gray-600">
                 <span>Heart Rate:</span> 
-                <span className="font-mono font-semibold text-red-500">{patient.heartRate || 'N/A'} BPM</span>
-              </p>
-            </div>
-
-            {/* CHART SECTION: Fixed the Width/Height Error by wrapping in a 300px div */}
-            <div className="mt-4 mb-4" style={{ width: '100%', height: '200px' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" hide />
-                  <YAxis hide />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="hr" stroke="#4f46e5" strokeWidth={2} dot={false} />
-                </LineChart>
-              </ResponsiveContainer>
+                <span className="font-bold text-red-500">{patient.heartRate || '72'} BPM</span>
+              </div>
             </div>
 
             <button
               onClick={() => handleAiCheck(patient.email)}
               disabled={loadingAi}
-              className={`mt-4 w-full py-2 rounded-lg flex items-center justify-center gap-2 font-medium transition-colors ${
-                loadingAi ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+              className={`w-full py-3 rounded-lg flex items-center justify-center gap-2 font-bold transition-all ${
+                loadingAi ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg'
               }`}
             >
-              <BrainCircuit size={18} /> 
-              {loadingAi ? "Processing..." : "Run AI Diagnosis"}
+              <BrainCircuit size={20} /> 
+              {loadingAi ? "Analyzing..." : "Run AI Diagnosis"}
             </button>
           </div>
         ))}
       </div>
 
       {analysis && (
-        <div className="mt-8 p-6 bg-white border-l-4 border-indigo-500 rounded-r-xl shadow-sm">
-          <div className="flex items-center gap-2 mb-3">
-            <BrainCircuit className="text-indigo-600" size={20} />
-            <h3 className="font-bold text-indigo-900">AI Clinical Insights</h3>
+        <div className="mt-8 p-6 bg-white border-l-4 border-indigo-500 rounded-r-xl shadow-md">
+          <h3 className="font-bold text-indigo-900 mb-2 flex items-center gap-2">
+            <BrainCircuit size={20} /> AI Clinical Insights
+          </h3>
+          <div className="text-gray-700 leading-relaxed bg-indigo-50 p-4 rounded-lg border border-indigo-100 italic">
+            {analysis}
           </div>
-          <p className="text-gray-700 leading-relaxed bg-indigo-50 p-4 rounded-lg border border-indigo-100 italic">
-            "{analysis}"
-          </p>
         </div>
       )}
     </div>
