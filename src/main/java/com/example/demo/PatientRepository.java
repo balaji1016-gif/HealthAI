@@ -14,6 +14,7 @@ public interface PatientRepository extends JpaRepository<Patient, String> {
     // .findById(id) -> Get one patient
     // .save(patient) -> Create or Update a patient
     // .deleteById(id) -> Delete a patient
+    Optional<Patient> findByEmail(String email);
 
     // Optional: Add a custom search to find patients by name
     default List<Patient> findByNameContainingIgnoreCase(String name) {
