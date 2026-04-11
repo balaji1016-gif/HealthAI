@@ -1,7 +1,7 @@
 package com.example.demo.auth;
 
 import com.example.demo.patient.Patient;
-import com.example.demo.patient.PatientRepository;
+import com.example.demo.PatientRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
