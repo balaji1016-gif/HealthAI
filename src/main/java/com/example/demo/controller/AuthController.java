@@ -2,7 +2,6 @@ package com.example.demo.controller;
 
 import com.example.demo.patient.Patient;
 import com.example.demo.PatientRepository;
-import com.example.demo.AiHealthService.AiHealthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,22 +16,31 @@ public class AuthController {
     @Autowired
     private PatientRepository patientRepository;
 
-    @Autowired
-    private AiHealthService aiHealthService;
-
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Patient newPatient) {
         try {
+            // Null-check key fields to prevent 500 Internal Server Error
             if (newPatient.getEmail() == null || newPatient.getEmail().isEmpty()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Email is required.");
             }
-            if (patientRepository.findByEmail(newPatient.getEmail()).isPresent()) {
+            if (newPatient.getPassword() == null || newPatient.getPassword().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Password is required.");
+            }
+
+            Optional<Patient> existingPatient = patientRepository.findByEmail(newPatient.getEmail());
+            if (existingPatient.isPresent()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Email is already registered.");
             }
+
+            // Save the new user
             Patient savedPatient = patientRepository.save(newPatient);
             return ResponseEntity.status(HttpStatus.CREATED).body(savedPatient);
+
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Database Error: " + e.getMessage());
+            // This logs the actual error in your Render console
+            e.printStackTrace(); 
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                 .body("Database registration failed: " + e.getMessage());
         }
     }
 
@@ -49,23 +57,6 @@ public class AuthController {
     public ResponseEntity<?> getCurrentUser(@RequestParam String email) {
         return patientRepository.findByEmail(email)
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
-    }
-
-    @PostMapping("/diagnose")
-    public ResponseEntity<?> runDiagnostic(@RequestBody Patient patientData) {
-        try {
-            Optional<Patient> patient = patientRepository.findByEmail(patientData.getEmail());
-            if (patient.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User record not found.");
-            }
-            
-            // This calls your Gemini logic
-            String insight = aiHealthService.generateClinicalInsight(patient.get());
-            return ResponseEntity.ok().body("{\"summary\": \"" + insight + "\"}");
-        } catch (Exception e) {
-            // If AI fails, we return a 200 with a fallback message instead of a 500 error
-            return ResponseEntity.ok().body("{\"summary\": \"AI analysis is currently refreshing. Please check back in a moment.\"}");
-        }
+                .orElse(ResponseEntity.notFound().build());
     }
 }
