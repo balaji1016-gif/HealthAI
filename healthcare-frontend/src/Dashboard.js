@@ -1,36 +1,41 @@
 import React, { useEffect, useState } from 'react';
-import { getPatients, getAiAssessment } from './api';
+import { getPatients, getAiAssessment } from '../api';
 import { Activity, BrainCircuit } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 
 const Dashboard = () => {
   const [patients, setPatients] = useState([]);
   const [analysis, setAnalysis] = useState("");
   const [loadingAi, setLoadingAi] = useState(false);
 
+  // Sample data for the chart to prevent it from being empty
+  const chartData = [
+    { name: 'Mon', hr: 72 },
+    { name: 'Tue', hr: 75 },
+    { name: 'Wed', hr: 71 },
+    { name: 'Thu', hr: 79 },
+    { name: 'Fri', hr: 74 },
+  ];
+
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
     
-    // CHANGE: Instead of just relying on localStorage, 
-    // we fetch fresh data from the server using the stored email.
     if (user && user.email) {
-      getPatients(user.email) // Pass the email to get fresh vitals
+      // We fetch fresh data from the server using the stored email.
+      getPatients(user.email)
         .then(res => {
-          // If the server returns a single patient, put it in an array
           const freshData = Array.isArray(res.data) ? res.data : [res.data];
           setPatients(freshData);
-          // Update localStorage with any fresh data (like BP/HR)
           localStorage.setItem('user', JSON.stringify(freshData[0]));
         })
         .catch(() => {
-          // Fallback to localStorage if server is slow
           setPatients([user]);
         });
     }
   }, []);
 
   const handleAiCheck = async (email) => {
-    // SECURITY CHECK: If email is missing, don't even try the call
     if (!email) {
       toast.error("User email missing. Please re-login.");
       return;
@@ -41,12 +46,12 @@ const Dashboard = () => {
     try {
       const res = await getAiAssessment(email);
       
-      // Match the backend key "summary"
+      // We check for 'summary' which is what our Java backend sends
       if (res.data && res.data.summary) {
         setAnalysis(res.data.summary);
         toast.success("AI Analysis Complete");
       } else {
-        throw new Error("Invalid Response");
+        setAnalysis("AI service responded but no summary was generated.");
       }
     } catch (err) {
       console.error("AI Fetch Error:", err);
@@ -82,6 +87,19 @@ const Dashboard = () => {
                 <span>Heart Rate:</span> 
                 <span className="font-mono font-semibold text-red-500">{patient.heartRate || 'N/A'} BPM</span>
               </p>
+            </div>
+
+            {/* CHART SECTION: Fixed the Width/Height Error by wrapping in a 300px div */}
+            <div className="mt-4 mb-4" style={{ width: '100%', height: '200px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="name" hide />
+                  <YAxis hide />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="hr" stroke="#4f46e5" strokeWidth={2} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
 
             <button
