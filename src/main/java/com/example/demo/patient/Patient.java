@@ -9,22 +9,26 @@ import lombok.Data;
 public class Patient {
 
     @Id
-    private String email; // Primary Key
+    private String email; 
 
     private String name;
     private String password;
     private int age;
     private String bloodPressure;
-    private String heartRate; // Changed to String to prevent parsing errors from frontend
+    private String heartRate;
     
     @Column(columnDefinition = "TEXT")
     private String medicalHistory;
 
     private String role = "PATIENT";
 
-    // Standard Getters and Setters (if not using Lombok)
+    // Standard Getters and Setters
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
+    
+    // ADDED THIS TO FIX THE "cannot find symbol getId()" ERROR
+    public String getId() { return email; } 
+
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public String getPassword() { return password; }
