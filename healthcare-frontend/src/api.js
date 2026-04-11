@@ -14,4 +14,17 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
+// --- ADD THESE EXPORTS BELOW ---
+
+// Fetch the list of patients (or current user profile)
+export const getPatients = () => API.get('/auth/me'); 
+
+// Trigger the AI Diagnosis
+// We pass an object { email } because the backend expects a Patient object or @RequestBody
+export const getAiAssessment = (email) => API.post('/auth/diagnose', { email });
+
+// Authentication helpers
+export const login = (credentials) => API.post('/auth/login', credentials);
+export const register = (userData) => API.post('/auth/register', userData);
+
 export default API;
