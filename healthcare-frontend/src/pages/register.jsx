@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import API from '../api'; // Correct path for api.js in src root
+import { useNavigate, Link } from 'react-router-dom';
+import API from '../api'; 
 import toast from 'react-hot-toast';
 
 const Register = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -22,12 +23,18 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     try {
+      // Calls your Render backend
       await API.post('/auth/register', formData);
       toast.success("Registration Successful!");
       navigate('/login');
     } catch (error) {
-      toast.error(error.response?.data?.message || "Registration Failed");
+      console.error(error);
+      const errorMsg = error.response?.data || "Registration Failed";
+      toast.error(typeof errorMsg === 'string' ? errorMsg : "Registration Failed");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -43,20 +50,27 @@ const Register = () => {
           <input type="text" name="bloodPressure" placeholder="BP (e.g., 120/80)" onChange={handleChange} style={styles.input} />
           <input type="number" name="heartRate" placeholder="Heart Rate" onChange={handleChange} style={styles.input} />
           <textarea name="medicalHistory" placeholder="Medical History" onChange={handleChange} style={styles.textarea} />
-          <button type="submit" style={styles.button}>Register</button>
+          
+          <button type="submit" disabled={loading} style={loading ? styles.buttonDisabled : styles.button}>
+            {loading ? "Registering..." : "Register"}
+          </button>
         </form>
+        <p style={{ textAlign: 'center', marginTop: '15px', fontSize: '14px' }}>
+          Already have an account? <Link to="/login" style={{ color: '#28a745', fontWeight: 'bold', textDecoration: 'none' }}>Login</Link>
+        </p>
       </div>
     </div>
   );
 };
 
 const styles = {
-  container: { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#f4f7f6' },
+  container: { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#f4f7f6', padding: '20px' },
   card: { background: '#fff', padding: '30px', borderRadius: '12px', width: '100%', maxWidth: '400px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' },
-  title: { textAlign: 'center', marginBottom: '20px' },
-  input: { width: '100%', padding: '10px', marginBottom: '15px', borderRadius: '6px', border: '1px solid #ddd', boxSizing: 'border-box' },
-  textarea: { width: '100%', padding: '10px', marginBottom: '15px', borderRadius: '6px', border: '1px solid #ddd', height: '60px', boxSizing: 'border-box' },
-  button: { width: '100%', padding: '12px', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }
+  title: { textAlign: 'center', marginBottom: '20px', color: '#333' },
+  input: { width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '6px', border: '1px solid #ddd', boxSizing: 'border-box', fontSize: '14px' },
+  textarea: { width: '100%', padding: '10px', marginBottom: '15px', borderRadius: '6px', border: '1px solid #ddd', height: '80px', boxSizing: 'border-box', fontSize: '14px' },
+  button: { width: '100%', padding: '12px', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' },
+  buttonDisabled: { width: '100%', padding: '12px', backgroundColor: '#6c757d', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'not-allowed', fontWeight: 'bold', fontSize: '16px' }
 };
 
 export default Register;
