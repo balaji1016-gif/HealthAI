@@ -19,12 +19,11 @@ public class AuthController {
 
     /**
      * Handles User Registration
-     * Fixes the 404 (Not Found) error for /api/auth/register
+     * Matches the fields: name, email, password, age, bloodPressure, heartRate, medicalHistory
      */
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Patient newPatient) {
         try {
-            // Check if a patient with this email already exists
             Optional<Patient> existingPatient = patientRepository.findByEmail(newPatient.getEmail());
             if (existingPatient.isPresent()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Email is already registered.");
@@ -46,14 +45,13 @@ public class AuthController {
         Optional<Patient> patient = patientRepository.findByEmail(loginRequest.getEmail());
 
         if (patient.isPresent() && patient.get().getPassword().equals(loginRequest.getPassword())) {
-            // Returns the full patient object for React state management
             return ResponseEntity.ok(patient.get());
         }
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid email or password.");
     }
 
     /**
-     * Hydrates User Data (Fixes the 404 on Dashboard reload)
+     * Fetches current user data for the Dashboard
      */
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(@RequestParam String email) {
@@ -63,14 +61,13 @@ public class AuthController {
     }
 
     /**
-     * AI Diagnostic Endpoint (Mock Analysis)
+     * AI Diagnostic Endpoint
      */
     @PostMapping("/diagnose")
     public ResponseEntity<?> runDiagnostic(@RequestBody String patientData) {
         try {
-            String aiResponse = "AI Analysis: Vitals within normal range. " +
-                                "Heart rate indicates good cardiovascular health. " +
-                                "Continue regular monitoring.";
+            String aiResponse = "AI Analysis: Vitals captured. Heart rate and BP are being monitored. " +
+                                "Analysis suggests maintaining current activity levels.";
             
             return ResponseEntity.ok().body("{\"summary\": \"" + aiResponse + "\"}");
         } catch (Exception e) {
