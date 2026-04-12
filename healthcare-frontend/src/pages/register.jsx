@@ -1,86 +1,116 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import API from '../api'; 
+import { useNavigate } from 'react-router-dom';
+import { register } from '../api';
+import { User, Mail, Lock, UserPlus, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Register = () => {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    age: '',
-    bloodPressure: '',
-    heartRate: '',
-    medicalHistory: '',
-    role: 'PATIENT'
+    role: 'PATIENT' // Default role
   });
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     setLoading(true);
-
-    // Clean the data before sending to prevent 500 errors
-    const payload = {
-      ...formData,
-      age: parseInt(formData.age) || 0,
-      bloodPressure: formData.bloodPressure || "Not Provided",
-      heartRate: formData.heartRate || "Not Provided"
-    };
-
     try {
-      const response = await API.post('/auth/register', payload);
-      if (response.status === 201) {
-        toast.success("Account Created Successfully!");
+      const res = await register(formData);
+      if (res.status === 201 || res.status === 200) {
+        toast.success("Account created successfully!");
         navigate('/login');
       }
-    } catch (error) {
-      console.error("Full Error Object:", error);
-      const errorMessage = error.response?.data || "Server Error (500)";
-      toast.error(typeof errorMessage === 'string' ? errorMessage : "Registration Failed");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Registration failed");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h2 style={styles.title}>Patient Signup</h2>
-        <form onSubmit={handleSubmit}>
-          <input type="text" name="name" placeholder="Full Name" value={formData.name} onChange={handleChange} required style={styles.input} />
-          <input type="email" name="email" placeholder="Email Address" value={formData.email} onChange={handleChange} required style={styles.input} />
-          <input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleChange} required style={styles.input} />
-          <input type="number" name="age" placeholder="Age" value={formData.age} onChange={handleChange} required style={styles.input} />
-          <input type="text" name="bloodPressure" placeholder="Blood Pressure (120/80)" value={formData.bloodPressure} onChange={handleChange} style={styles.input} />
-          <input type="text" name="heartRate" placeholder="Heart Rate (BPM)" value={formData.heartRate} onChange={handleChange} style={styles.input} />
-          <textarea name="medicalHistory" placeholder="Past Medical Conditions" value={formData.medicalHistory} onChange={handleChange} style={styles.textarea} />
-          
-          <button type="submit" disabled={loading} style={loading ? styles.buttonDisabled : styles.button}>
-            {loading ? "Creating Account..." : "Register"}
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+      <div className="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl p-10 border border-slate-100">
+        <button 
+          onClick={() => navigate('/')} 
+          className="mb-6 flex items-center gap-2 text-slate-400 hover:text-indigo-600 transition-colors font-bold text-sm uppercase tracking-widest"
+        >
+          <ArrowLeft size={16} /> Back to Home
+        </button>
+
+        <h2 className="text-3xl font-black text-slate-800 mb-2">Create Account</h2>
+        <p className="text-slate-500 mb-8">Join the AI Healthcare network today.</p>
+
+        <form onSubmit={handleRegister} className="space-y-5">
+          {/* NAME INPUT */}
+          <div className="relative">
+            <User className="absolute left-4 top-4 text-slate-400" size={20} />
+            <input
+              type="text"
+              placeholder="Full Name"
+              required
+              className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            />
+          </div>
+
+          {/* EMAIL INPUT */}
+          <div className="relative">
+            <Mail className="absolute left-4 top-4 text-slate-400" size={20} />
+            <input
+              type="email"
+              placeholder="Email Address"
+              required
+              className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            />
+          </div>
+
+          {/* PASSWORD INPUT */}
+          <div className="relative">
+            <Lock className="absolute left-4 top-4 text-slate-400" size={20} />
+            <input
+              type="password"
+              placeholder="Password"
+              required
+              className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            />
+          </div>
+
+          {/* ROLE SELECTION MENU (The Fix) */}
+          <div className="space-y-2">
+            <label className="text-xs font-black text-slate-400 uppercase ml-2 tracking-widest">Select Role</label>
+            <select
+              className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none appearance-none font-bold text-slate-700 cursor-pointer"
+              value={formData.role}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+            >
+              <option value="PATIENT">Patient (View Vitals)</option>
+              <option value="DOCTOR">Doctor (Manage Clinic)</option>
+            </select>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95 flex items-center justify-center gap-3 mt-4"
+          >
+            {loading ? "CREATING..." : <><UserPlus size={24} /> Register Now</>}
           </button>
         </form>
-        <p style={{ textAlign: 'center', marginTop: '15px', fontSize: '14px' }}>
-          Already registered? <Link to="/login" style={{ color: '#28a745', fontWeight: 'bold', textDecoration: 'none' }}>Login here</Link>
+
+        <p className="text-center mt-8 text-slate-500">
+          Already have an account?{' '}
+          <button onClick={() => navigate('/login')} className="text-indigo-600 font-bold hover:underline">
+            Login here
+          </button>
         </p>
       </div>
     </div>
   );
-};
-
-const styles = {
-  container: { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#f4f7f6', padding: '20px' },
-  card: { background: '#fff', padding: '30px', borderRadius: '12px', width: '100%', maxWidth: '400px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' },
-  title: { textAlign: 'center', marginBottom: '20px', color: '#333' },
-  input: { width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '6px', border: '1px solid #ddd', boxSizing: 'border-box' },
-  textarea: { width: '100%', padding: '10px', marginBottom: '15px', borderRadius: '6px', border: '1px solid #ddd', height: '80px', boxSizing: 'border-box' },
-  button: { width: '100%', padding: '12px', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' },
-  buttonDisabled: { width: '100%', padding: '12px', backgroundColor: '#ccc', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'not-allowed' }
 };
 
 export default Register;
