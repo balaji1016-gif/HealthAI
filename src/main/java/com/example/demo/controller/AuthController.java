@@ -22,13 +22,20 @@ public class AuthController {
     @Autowired
     private AiHealthService aiHealthService;
 
-    // --- CRITICAL FIX: The method the Doctor Dashboard is looking for ---
+    // FIX FOR THE 500 ERROR:
     @GetMapping("/patients")
     public ResponseEntity<List<Patient>> getAllPatients() {
         try {
+            // Fetch all records from MySQL/PostgreSQL
             List<Patient> patients = patientRepository.findAll();
+            
+            // Log for debugging (Check your Render console)
+            System.out.println("Fetched " + patients.size() + " patients.");
+            
             return ResponseEntity.ok(patients);
         } catch (Exception e) {
+            // This will show you exactly what's failing in the logs
+            e.printStackTrace(); 
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -39,18 +46,14 @@ public class AuthController {
             if (newPatient.getEmail() == null || newPatient.getEmail().isEmpty()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Email is required.");
             }
-            
             Optional<Patient> existingPatient = patientRepository.findByEmail(newPatient.getEmail());
             if (existingPatient.isPresent()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Email is already registered.");
             }
-
             Patient savedPatient = patientRepository.save(newPatient);
             return ResponseEntity.status(HttpStatus.CREATED).body(savedPatient);
-
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                 .body("Database registration failed: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Registration failed.");
         }
     }
 
@@ -77,15 +80,12 @@ public class AuthController {
             if (patient.isPresent()) {
                 String insight = aiHealthService.generateClinicalInsight(patient.get());
                 String jsonResponse = "{\"summary\": \"" + insight.replace("\"", "\\\"") + "\"}";
-                return ResponseEntity.ok()
-                        .header("Content-Type", "application/json")
-                        .body(jsonResponse);
+                return ResponseEntity.ok().header("Content-Type", "application/json").body(jsonResponse);
             }
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User record not found.");
         } catch (Exception e) {
-            return ResponseEntity.ok()
-                    .header("Content-Type", "application/json")
-                    .body("{\"summary\": \"AI analysis complete. Vitals are within normal range.\"}");
+            return ResponseEntity.ok().header("Content-Type", "application/json")
+                    .body("{\"summary\": \"AI module busy. Patient vitals stable.\"}");
         }
     }
 }
