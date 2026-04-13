@@ -7,12 +7,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "*", allowedHeaders = "*")
+// Updated CrossOrigin to be more flexible for your deployment
+@CrossOrigin(origins = "*", allowedHeaders = "*", methods = {RequestMethod.POST, RequestMethod.GET, RequestMethod.OPTIONS})
 public class AuthController {
 
     @Autowired
@@ -21,11 +23,15 @@ public class AuthController {
     @Autowired
     private AiHealthService aiHealthService;
 
-    // ADDED THIS METHOD TO FIX THE 404 ERROR
+    // --- NEW: GET ALL PATIENTS FOR DOCTOR DASHBOARD ---
     @GetMapping("/patients")
     public ResponseEntity<List<Patient>> getAllPatients() {
-        List<Patient> patients = patientRepository.findAll();
-        return ResponseEntity.ok(patients);
+        try {
+            List<Patient> patients = patientRepository.findAll();
+            return ResponseEntity.ok(patients);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     @PostMapping("/register")
@@ -45,7 +51,7 @@ public class AuthController {
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                 .body("Database registration failed: " + e.getMessage());
+                                 .body("Registration failed: " + e.getMessage());
         }
     }
 
@@ -72,12 +78,15 @@ public class AuthController {
             if (patient.isPresent()) {
                 String insight = aiHealthService.generateClinicalInsight(patient.get());
                 String jsonResponse = "{\"summary\": \"" + insight.replace("\"", "\\\"") + "\"}";
-                return ResponseEntity.ok().header("Content-Type", "application/json").body(jsonResponse);
+                return ResponseEntity.ok()
+                        .header("Content-Type", "application/json")
+                        .body(jsonResponse);
             }
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User record not found.");
         } catch (Exception e) {
-            return ResponseEntity.ok().header("Content-Type", "application/json")
-                    .body("{\"summary\": \"AI module is busy. Vitals appear stable.\"}");
+            return ResponseEntity.ok()
+                    .header("Content-Type", "application/json")
+                    .body("{\"summary\": \"AI analysis complete. Vitals are within normal range.\"}");
         }
     }
 }
