@@ -16,32 +16,33 @@ const AuthLogin = () => {
     try {
       const res = await login(formData);
       
-      // Since your Java backend returns the Patient object directly:
-      // We check for res.data.email to confirm we got a valid user object
+      // Your Java backend returns the Patient object directly in res.data
       if (res.data && res.data.email) {
-        // Save user object
-        localStorage.setItem('user', JSON.stringify(res.data));
-        
-        // We set a dummy token so any 'ProtectedRoute' doesn't think we are logged out
-        localStorage.setItem('token', 'session_active'); 
-        
-        const userRole = res.data.role; // Matches your Patient entity 'role' field
-        
-        toast.success(`Welcome, ${res.data.name || 'User'}`);
+        const user = res.data;
+        const role = user.role; // Extract role (DOCTOR or PATIENT)
 
-        // Immediate redirection based on role
-        if (userRole === 'DOCTOR') {
-          navigate('/doctordashboard');
+        // 1. Save data exactly how App.jsx ProtectedRoute expects it
+        localStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem('role', role);
+        localStorage.setItem('token', 'authenticated_session_active'); 
+        
+        toast.success(`Welcome, ${user.name || 'User'}`);
+
+        // 2. Navigation - Matching the paths in your App.jsx exactly
+        if (role === 'DOCTOR') {
+          navigate('/doctor-dashboard');
         } else {
-          navigate('/patientdashboard');
+          navigate('/patient-dashboard');
         }
       } else {
-        toast.error("Login failed: Unexpected response format from server.");
+        toast.error("Login failed: Unexpected data format from server.");
       }
     } catch (err) {
       console.error("Login Error:", err);
-      // Backend returns "Invalid credentials." string on 401
-      const errorMsg = err.response?.data || "Invalid email or password.";
+      // Handle Spring Boot string response or generic error
+      const errorMsg = typeof err.response?.data === 'string' 
+        ? err.response.data 
+        : "Invalid email or password.";
       toast.error(errorMsg);
     } finally {
       setLoading(false);
@@ -60,7 +61,7 @@ const AuthLogin = () => {
 
         <div className="mb-8">
           <h2 className="text-3xl font-black text-slate-800 mb-2 tracking-tight">System Login</h2>
-          <p className="text-slate-500 font-medium">Enter your credentials to access the AI portal.</p>
+          <p className="text-slate-500 font-medium">Please enter your credentials.</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-5">
@@ -91,23 +92,14 @@ const AuthLogin = () => {
             disabled={loading}
             className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95 flex items-center justify-center gap-3 mt-4"
           >
-            {loading ? (
-              "AUTHENTICATING..."
-            ) : (
-              <>
-                <LogIn size={24} /> SECURE LOGIN
-              </>
-            )}
+            {loading ? "AUTHENTICATING..." : <><LogIn size={24} /> SECURE LOGIN</>}
           </button>
         </form>
 
         <div className="mt-8 pt-8 border-t border-slate-100 text-center">
           <p className="text-slate-500 text-sm font-medium">
             New to the platform?{' '}
-            <button 
-              onClick={() => navigate('/register')} 
-              className="text-indigo-600 font-black hover:underline ml-1"
-            >
+            <button onClick={() => navigate('/register')} className="text-indigo-600 font-black hover:underline ml-1">
               Register Account
             </button>
           </p>
