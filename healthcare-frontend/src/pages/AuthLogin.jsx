@@ -16,16 +16,18 @@ const AuthLogin = () => {
     try {
       const res = await login(formData);
       
-      // CRITICAL FIX: Ensure data exists before saving
-      if (res.data && res.data.token) {
-        // Save to localStorage
-        localStorage.setItem('token', res.data.token);
-        localStorage.setItem('user', JSON.stringify(res.data.user));
+      // Since your Java backend returns the Patient object directly:
+      // We check for res.data.email to confirm we got a valid user object
+      if (res.data && res.data.email) {
+        // Save user object
+        localStorage.setItem('user', JSON.stringify(res.data));
         
-        // Extract role for routing
-        const userRole = res.data.user.role;
+        // We set a dummy token so any 'ProtectedRoute' doesn't think we are logged out
+        localStorage.setItem('token', 'session_active'); 
         
-        toast.success(`Access Granted: ${res.data.user.name || 'User'}`);
+        const userRole = res.data.role; // Matches your Patient entity 'role' field
+        
+        toast.success(`Welcome, ${res.data.name || 'User'}`);
 
         // Immediate redirection based on role
         if (userRole === 'DOCTOR') {
@@ -34,11 +36,12 @@ const AuthLogin = () => {
           navigate('/patientdashboard');
         }
       } else {
-        toast.error("Invalid response from server. Missing token.");
+        toast.error("Login failed: Unexpected response format from server.");
       }
     } catch (err) {
       console.error("Login Error:", err);
-      const errorMsg = err.response?.data?.message || "Invalid credentials or Server offline.";
+      // Backend returns "Invalid credentials." string on 401
+      const errorMsg = err.response?.data || "Invalid email or password.";
       toast.error(errorMsg);
     } finally {
       setLoading(false);
@@ -57,11 +60,10 @@ const AuthLogin = () => {
 
         <div className="mb-8">
           <h2 className="text-3xl font-black text-slate-800 mb-2 tracking-tight">System Login</h2>
-          <p className="text-slate-500 font-medium">Enter your clinical credentials to continue.</p>
+          <p className="text-slate-500 font-medium">Enter your credentials to access the AI portal.</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-5">
-          {/* EMAIL FIELD */}
           <div className="relative">
             <Mail className="absolute left-4 top-4 text-slate-400" size={20} />
             <input
@@ -73,7 +75,6 @@ const AuthLogin = () => {
             />
           </div>
 
-          {/* PASSWORD FIELD */}
           <div className="relative">
             <Lock className="absolute left-4 top-4 text-slate-400" size={20} />
             <input
@@ -85,7 +86,6 @@ const AuthLogin = () => {
             />
           </div>
 
-          {/* LOGIN BUTTON */}
           <button
             type="submit"
             disabled={loading}
