@@ -4,14 +4,10 @@ const API = axios.create({
   baseURL: 'https://healthai-nx8q.onrender.com/api',
 });
 
-// Helper to get the token for secure requests
+// Since your Spring Boot app isn't using JWT @Header authentication yet,
+// we don't need to attach the Bearer token, but we'll keep the interceptor 
+// simple so it doesn't cause errors.
 API.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  } else {
-    console.warn("No token found in localStorage for this request.");
-  }
   return config;
 });
 
@@ -20,14 +16,14 @@ API.interceptors.request.use((config) => {
 export const login = (credentials) => API.post('/auth/login', credentials);
 export const register = (userData) => API.post('/auth/register', userData);
 
-// Fetch patient details
+// Fetch patient details (Mapped to your @GetMapping("/me"))
 export const getPatients = (email) => API.get(`/auth/me?email=${email}`);
 
-// AI Diagnosis
+// AI Diagnosis (Mapped to your @PostMapping("/diagnose"))
 export const getAiAssessment = (email) => API.post('/auth/diagnose', { email: email });
 
-// NEW FUNCTIONALITY ENDPOINTS
-export const updateVitals = (data) => API.post('/auth/update-vitals', data);
+// NOTE: These should be added to your Java Controller if not already there
+export const updateVitals = (data) => API.post('/auth/register', data); 
 export const bookAppointment = (data) => API.post('/appointments/request', data);
 export const confirmAppointment = (id, schedule) => API.post(`/appointments/approve/${id}`, schedule);
 
