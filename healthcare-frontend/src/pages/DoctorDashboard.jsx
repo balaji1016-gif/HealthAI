@@ -3,136 +3,123 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { confirmAppointment } from '../api';
+import { Download, CheckCircle, Clock, User, ClipboardList } from 'lucide-react';
 
 const DoctorDashboard = () => {
   const [patients, setPatients] = useState([]);
   const [appointments, setAppointments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const user = JSON.parse(localStorage.getItem("user"));
+  const [schedule, setSchedule] = useState({ date: '', time: '' });
+  const doctor = JSON.parse(localStorage.getItem("user"));
 
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        const pRes = await axios.get('https://healthai-nx8q.onrender.com/api/auth/patients');
-        const aRes = await axios.get('https://healthai-nx8q.onrender.com/api/appointments/all');
-        setPatients(pRes.data);
-        setAppointments(aRes.data);
-      } catch (e) {
-        toast.error("Failed to load clinical data.");
-      } finally {
-        setLoading(false);
-      }
+      const pRes = await axios.get('https://healthai-nx8q.onrender.com/api/auth/patients');
+      const aRes = await axios.get('https://healthai-nx8q.onrender.com/api/appointments/all');
+      setPatients(pRes.data);
+      setAppointments(aRes.data);
     };
     fetchData();
   }, []);
 
-  const downloadReport = async (p) => {
-    const loadId = toast.loading(`Generating report for ${p.fullName}...`);
-    try {
-      const res = await axios.get(`https://healthai-nx8q.onrender.com/api/vitals/patient/${p.id}`);
-      const doc = new jsPDF();
-      doc.setFontSize(18);
-      doc.text("Clinical Health Analysis", 14, 20);
-      doc.setFontSize(10);
-      doc.text(`Patient: ${p.fullName} | Physician: Dr. ${user.fullName}`, 14, 30);
+  const downloadReport = (p) => {
+    const doc = new jsPDF();
+    doc.setFontSize(22);
+    doc.setTextColor(37, 99, 235);
+    doc.text("CLINICAL HEALTH REPORT", 14, 20);
+    
+    doc.setFontSize(12);
+    doc.setTextColor(100);
+    doc.text(`Patient Name: ${p.fullName || p.name}`, 14, 35);
+    doc.text(`Email: ${p.email}`, 14, 42);
+    doc.text(`Physician: Dr. ${doctor.name || 'System'}`, 14, 49);
 
-      doc.autoTable({
-        startY: 35,
-        head: [['Date', 'Blood Pressure', 'Heart Rate', 'AI Status']],
-        body: res.data.map(log => [new Date(log.timestamp).toLocaleDateString(), log.bloodPressure, log.heartRate, log.aiInsight]),
-        headStyles: { fillColor: [37, 99, 235] }
-      });
-      doc.save(`${p.fullName}_Report.pdf`);
-      toast.success("PDF Downloaded", { id: loadId });
-    } catch (e) {
-      toast.error("Error generating PDF", { id: loadId });
-    }
+    doc.autoTable({
+      startY: 60,
+      head: [['Metric', 'Value']],
+      body: [
+        ['Blood Pressure', p.bloodPressure || 'N/A'],
+        ['Heart Rate', p.heartRate || 'N/A'],
+        ['Patient Doubts', p.doubtText || 'None'],
+        ['Assessment Date', new Date().toLocaleDateString()]
+      ],
+      headStyles: { fillColor: [37, 99, 235] }
+    });
+
+    doc.save(`Report_${p.fullName}.pdf`);
   };
 
-  const approveApp = async (id) => {
+  const handleApprove = async (id) => {
+    if(!schedule.date || !schedule.time) return toast.error("Set date and time first!");
     try {
-      await axios.post(`https://healthai-nx8q.onrender.com/api/appointments/approve/${id}`);
-      setAppointments(appointments.map(a => a.id === id ? {...a, status: 'APPROVED'} : a));
-      toast.success("Appointment Confirmed");
-    } catch (e) { toast.error("Error approving."); }
+      await confirmAppointment(id, schedule);
+      toast.success("Appointment Scheduled!");
+    } catch (e) { toast.error("Error"); }
   };
 
   return (
     <div className="min-h-screen bg-slate-50 p-6 md:p-10">
-      <div className="max-w-6xl mx-auto space-y-10">
-        <header className="flex justify-between items-end">
-          <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Clinical Management</h1>
-            <p className="text-blue-600 font-bold text-xs uppercase">Physician: Dr. {user.fullName}</p>
-          </div>
-          <button onClick={() => {localStorage.clear(); window.location.href='/';}} className="text-slate-400 font-bold text-sm hover:text-red-500 transition">Logout System</button>
+      <div className="max-w-6xl mx-auto space-y-8">
+        <header className="flex justify-between items-center">
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Doctor Portal</h1>
+          <span className="bg-blue-600 text-white px-4 py-1 rounded-full text-xs font-bold uppercase">Dr. {doctor.name}</span>
         </header>
 
-        {loading ? (
-          /* Loading Skeletons */
-          <div className="space-y-4 animate-pulse">
-            <div className="h-20 bg-slate-200 rounded-3xl"></div>
-            <div className="h-20 bg-slate-200 rounded-3xl"></div>
-            <div className="h-20 bg-slate-200 rounded-3xl"></div>
+        {/* PATIENT LIST WITH DOUBTS */}
+        <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
+          <table className="w-full text-left">
+            <thead className="bg-slate-50 border-b border-slate-100">
+              <tr>
+                <th className="p-6 text-[10px] font-black uppercase text-slate-400">Patient Details</th>
+                <th className="p-6 text-[10px] font-black uppercase text-slate-400">Patient Doubts</th>
+                <th className="p-6 text-right text-[10px] font-black uppercase text-slate-400">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {patients.map(p => (
+                <tr key={p.email} className="border-b last:border-0">
+                  <td className="p-6">
+                    <p className="font-bold text-slate-800">{p.name || p.fullName}</p>
+                    <p className="text-xs text-slate-500">BP: {p.bloodPressure} | HR: {p.heartRate}</p>
+                  </td>
+                  <td className="p-6 max-w-xs text-xs italic text-slate-600 font-medium">
+                    "{p.doubtText || "No queries submitted"}"
+                  </td>
+                  <td className="p-6 text-right">
+                    <button onClick={()=>downloadReport(p)} className="bg-slate-900 text-white p-3 rounded-xl hover:bg-blue-600 transition">
+                      <Download size={18} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* APPOINTMENT MANAGER */}
+        <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100">
+          <h3 className="text-sm font-black text-slate-400 uppercase mb-6 flex items-center gap-2">
+            <Clock size={16} /> Pending Appointment Confirmations
+          </h3>
+          <div className="space-y-4">
+            {appointments.filter(a => a.status === 'PENDING').map(app => (
+              <div key={app.id} className="p-6 bg-slate-50 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>
+                  <p className="font-bold text-lg text-slate-800">{app.patientName}</p>
+                  <p className="text-xs text-indigo-600 font-bold italic">"{app.reason}"</p>
+                </div>
+                <div className="flex gap-2">
+                  <input type="date" onChange={(e)=>setSchedule({...schedule, date: e.target.value})} className="p-2 border rounded-xl text-xs font-bold" />
+                  <input type="time" onChange={(e)=>setSchedule({...schedule, time: e.target.value})} className="p-2 border rounded-xl text-xs font-bold" />
+                  <button onClick={()=>handleApprove(app.id)} className="bg-green-600 text-white px-6 py-2 rounded-xl font-black text-xs uppercase shadow-lg shadow-green-100">Confirm</button>
+                </div>
+              </div>
+            ))}
           </div>
-        ) : (
-          <>
-            {/* Patient Records Table */}
-            <div className="bg-white border rounded-3xl overflow-hidden shadow-sm">
-              <table className="w-full text-left">
-                <thead className="bg-slate-50 border-b border-slate-100">
-                  <tr>
-                    <th className="p-6 text-[10px] font-black uppercase text-slate-400">Patient Identity</th>
-                    <th className="p-6 text-right text-[10px] font-black uppercase text-slate-400">Clinical Data</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {patients.map(p => (
-                    <tr key={p.id} className="border-b last:border-0 hover:bg-blue-50/30 transition">
-                      <td className="p-6 font-bold text-slate-700">{p.fullName}</td>
-                      <td className="p-6 text-right">
-                        <button onClick={()=>downloadReport(p)} className="bg-slate-900 text-white px-5 py-2 rounded-xl text-[10px] font-bold uppercase hover:bg-blue-600 transition">Download PDF</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Appointment Section */}
-            <div className="grid md:grid-cols-2 gap-8">
-              <div className="bg-white border p-8 rounded-3xl shadow-sm">
-                <h3 className="font-bold text-slate-800 mb-6 text-xs uppercase tracking-widest">Pending Consultations</h3>
-                <div className="space-y-4">
-                  {appointments.filter(a => a.status === 'PENDING').length === 0 && <p className="text-slate-400 italic text-sm">No new requests.</p>}
-                  {appointments.filter(a => a.status === 'PENDING').map(app => (
-                    <div key={app.id} className="p-4 bg-slate-50 border rounded-2xl flex justify-between items-center">
-                      <div>
-                        <p className="font-bold text-sm text-slate-800">{app.patientName}</p>
-                        <p className="text-[10px] text-slate-500 italic">"{app.reason}"</p>
-                      </div>
-                      <button onClick={()=>approveApp(app.id)} className="bg-green-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase hover:bg-green-700 transition">Approve</button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="bg-white border p-8 rounded-3xl shadow-sm">
-                <h3 className="font-bold text-slate-800 mb-6 text-xs uppercase tracking-widest">Upcoming Schedule</h3>
-                <div className="space-y-4 opacity-60">
-                  {appointments.filter(a => a.status === 'APPROVED').map(app => (
-                    <div key={app.id} className="p-4 border border-dashed rounded-2xl flex justify-between items-center">
-                      <p className="font-bold text-sm text-slate-600">{app.patientName}</p>
-                      <span className="text-[9px] font-black text-blue-600 uppercase border border-blue-200 px-2 py-1 rounded-md">Scheduled</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </>
-        )}
+        </div>
       </div>
     </div>
   );
 };
+
 export default DoctorDashboard;
