@@ -4,11 +4,11 @@ const API = axios.create({
   baseURL: 'https://healthai-nx8q.onrender.com/api',
 });
 
-// Since your Spring Boot app isn't using JWT @Header authentication yet,
-// we don't need to attach the Bearer token, but we'll keep the interceptor 
-// simple so it doesn't cause errors.
+// Request interceptor - stays simple for your current Java setup
 API.interceptors.request.use((config) => {
   return config;
+}, (error) => {
+  return Promise.reject(error);
 });
 
 // --- API ENDPOINTS ---
@@ -22,8 +22,10 @@ export const getPatients = (email) => API.get(`/auth/me?email=${email}`);
 // AI Diagnosis (Mapped to your @PostMapping("/diagnose"))
 export const getAiAssessment = (email) => API.post('/auth/diagnose', { email: email });
 
-// NOTE: These should be added to your Java Controller if not already there
+// Update vitals (Note: Reusing register endpoint as per your current Java controller)
 export const updateVitals = (data) => API.post('/auth/register', data); 
+
+// Appointment endpoints
 export const bookAppointment = (data) => API.post('/appointments/request', data);
 export const confirmAppointment = (id, schedule) => API.post(`/appointments/approve/${id}`, schedule);
 
