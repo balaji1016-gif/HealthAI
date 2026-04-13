@@ -13,8 +13,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
-// Updated CrossOrigin to be more flexible for your deployment
-@CrossOrigin(origins = "*", allowedHeaders = "*", methods = {RequestMethod.POST, RequestMethod.GET, RequestMethod.OPTIONS})
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 public class AuthController {
 
     @Autowired
@@ -23,7 +22,7 @@ public class AuthController {
     @Autowired
     private AiHealthService aiHealthService;
 
-    // --- NEW: GET ALL PATIENTS FOR DOCTOR DASHBOARD ---
+    // --- CRITICAL FIX: The method the Doctor Dashboard is looking for ---
     @GetMapping("/patients")
     public ResponseEntity<List<Patient>> getAllPatients() {
         try {
@@ -51,7 +50,7 @@ public class AuthController {
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                 .body("Registration failed: " + e.getMessage());
+                                 .body("Database registration failed: " + e.getMessage());
         }
     }
 
