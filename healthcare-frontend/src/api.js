@@ -22,8 +22,6 @@ export const getPatients = (email) => API.get(`/auth/me?email=${email}`);
 // AI Diagnosis (Mapped to your @PostMapping("/diagnose"))
 export const getAiAssessment = (email) => API.post('/auth/diagnose', { email: email });
 
-// Update vitals (Note: Reusing register endpoint as per your current Java controller)
-export const updateVitals = (data) => API.post('/auth/register', data); 
 
 // Appointment endpoints
 export const bookAppointment = (data) => API.post('/appointments/request', data);
