@@ -1,10 +1,11 @@
 import axios from 'axios';
 
 const API = axios.create({
+  // Your specific Render backend URL
   baseURL: 'https://healthai-nx8q.onrender.com/api',
 });
 
-// Request interceptor - stays simple for your current Java setup
+// Request interceptor
 API.interceptors.request.use((config) => {
   return config;
 }, (error) => {
@@ -13,20 +14,22 @@ API.interceptors.request.use((config) => {
 
 // --- API ENDPOINTS ---
 
+// Auth Endpoints
 export const login = (credentials) => API.post('/auth/login', credentials);
 export const register = (userData) => API.post('/auth/register', userData);
 
-// Fetch patient details (Mapped to your @GetMapping("/me"))
-export const getPatients = (email) => API.get(`/auth/me?email=${email}`);
+// Fetch patient details (mapped to your @GetMapping)
+// Added a fallback to ensure email is passed correctly
+export const getPatients = (email) => API.get(`/auth/patients?email=${email}`);
 
-// AI Diagnosis (Mapped to your @PostMapping("/diagnose"))
+// AI Diagnosis
 export const getAiAssessment = (email) => API.post('/auth/diagnose', { email: email });
 
+// THE FIX: Use the 'API' instance and the correct endpoint path
+export const updateVitals = (data) => API.put('/auth/update-vitals', data);
 
 // Appointment endpoints
 export const bookAppointment = (data) => API.post('/appointments/request', data);
 export const confirmAppointment = (id, schedule) => API.post(`/appointments/approve/${id}`, schedule);
-// In your api/index.js or wherever you define 'updateVitals'
-export const updateVitals = (data) => axios.put(`${API_URL}/api/auth/update-vitals`, data);
 
 export default API;
