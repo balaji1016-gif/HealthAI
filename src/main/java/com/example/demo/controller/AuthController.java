@@ -22,15 +22,11 @@ public class AuthController {
     @Autowired
     private AiHealthService aiHealthService;
 
-    // COMPLETE FIX: The endpoint the Doctor Dashboard is calling
     @GetMapping("/patients")
     public ResponseEntity<List<Patient>> getAllPatients() {
         try {
-            List<Patient> patients = patientRepository.findAll();
-            return ResponseEntity.ok(patients);
+            return ResponseEntity.ok(patientRepository.findAll());
         } catch (Exception e) {
-            // Logs the specific database error to Render console
-            e.printStackTrace(); 
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -48,9 +44,31 @@ public class AuthController {
     public ResponseEntity<?> register(@RequestBody Patient newPatient) {
         try {
             if (newPatient.getEmail() == null) return ResponseEntity.badRequest().body("Email required");
+            // Defaulting role if not sent, though frontend should handle this
+            if (newPatient.getRole() == null) newPatient.setRole("PATIENT");
             return ResponseEntity.ok(patientRepository.save(newPatient));
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error: " + e.getMessage());
+        }
+    }
+
+    // THE FIX: PUT mapping to update existing patient vitals
+    @PutMapping("/update-vitals")
+    public ResponseEntity<?> updateVitals(@RequestBody Patient updatedData) {
+        try {
+            Optional<Patient> existingPatient = patientRepository.findByEmail(updatedData.getEmail());
+            if (existingPatient.isPresent()) {
+                Patient patient = existingPatient.get();
+                patient.setBloodPressure(updatedData.getBloodPressure());
+                patient.setHeartRate(updatedData.getHeartRate());
+                if(updatedData.getMedicalHistory() != null) {
+                    patient.setMedicalHistory(updatedData.getMedicalHistory());
+                }
+                return ResponseEntity.ok(patientRepository.save(patient));
+            }
+            return ResponseEntity.status(404).body("Patient not found");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Update failed: " + e.getMessage());
         }
     }
 
@@ -59,6 +77,7 @@ public class AuthController {
         try {
             Optional<Patient> patient = patientRepository.findByEmail(patientData.getEmail());
             if (patient.isPresent()) {
+                // Now pulls the UPDATED data from the DB
                 String insight = aiHealthService.generateClinicalInsight(patient.get());
                 return ResponseEntity.ok().body("{\"summary\": \"" + insight + "\"}");
             }
