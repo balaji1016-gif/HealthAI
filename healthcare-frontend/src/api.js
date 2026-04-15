@@ -28,5 +28,7 @@ export const updateVitals = (data) => API.post('/auth/register', data);
 // Appointment endpoints
 export const bookAppointment = (data) => API.post('/appointments/request', data);
 export const confirmAppointment = (id, schedule) => API.post(`/appointments/approve/${id}`, schedule);
+// In your api/index.js or wherever you define 'updateVitals'
+export const updateVitals = (data) => axios.put(`${API_URL}/api/auth/update-vitals`, data);
 
 export default API;
