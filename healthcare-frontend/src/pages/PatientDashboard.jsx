@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getAiAssessment, updateVitals, bookAppointment } from '../api';
-import { Activity, Heart, Thermometer, Save, RefreshCw, BrainCircuit, FileText, CalendarPlus, LogOut, User } from 'lucide-react';
+import { Heart, Thermometer, Save, RefreshCw, BrainCircuit, FileText, CalendarPlus, LogOut, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const PatientDashboard = () => {
@@ -16,14 +16,8 @@ const PatientDashboard = () => {
     if (userData) {
       const user = JSON.parse(userData);
       setPatient(user);
-      setVitalsForm({ 
-        bp: user.bloodPressure || '', 
-        hr: user.heartRate || '', 
-        doubt: user.medicalHistory || '' 
-      });
-    } else {
-      window.location.href = '/login';
-    }
+      setVitalsForm({ bp: user.bloodPressure || '', hr: user.heartRate || '', doubt: user.medicalHistory || '' });
+    } else { window.location.href = '/login'; }
   }, []);
 
   const handleLogout = () => {
@@ -34,162 +28,89 @@ const PatientDashboard = () => {
   const handleUpdate = async () => {
     setLoading(true);
     try {
-      const payload = { 
-        email: patient.email, 
-        bloodPressure: vitalsForm.bp, 
-        heartRate: vitalsForm.hr, 
-        medicalHistory: vitalsForm.doubt 
-      };
+      const payload = { email: patient.email, bloodPressure: vitalsForm.bp, heartRate: vitalsForm.hr, medicalHistory: vitalsForm.doubt };
       await updateVitals(payload);
-      const updatedUser = { ...patient, ...payload };
-      setPatient(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      toast.success("Vitals Synchronized");
-    } catch (e) {
-      toast.error("Update Failed");
-    } finally {
-      setLoading(false);
-    }
+      setPatient({ ...patient, ...payload });
+      localStorage.setItem('user', JSON.stringify({ ...patient, ...payload }));
+      toast.success("Health Data Saved");
+    } catch (e) { toast.error("Database Error"); } finally { setLoading(false); }
   };
 
   const handleRunAI = async () => {
     setAiLoading(true);
     try {
-      const res = await getAiAssessment({ 
-        email: patient.email, 
-        bloodPressure: vitalsForm.bp, 
-        heartRate: vitalsForm.hr, 
-        medicalHistory: vitalsForm.doubt 
-      });
+      const res = await getAiAssessment({ email: patient.email, bloodPressure: vitalsForm.bp, heartRate: vitalsForm.hr, medicalHistory: vitalsForm.doubt });
       setDiagnosis(res.data.summary);
-      toast.success("Full Clinical Analysis Generated");
-    } catch (e) {
-      toast.error("AI Service Error (Check Render API Key)");
-    } finally {
-      setAiLoading(false);
-    }
+      toast.success("Analysis Generated");
+    } catch (e) { toast.error("AI Service Unavailable (500)"); } finally { setAiLoading(false); }
   };
 
-  const handleBook = async () => {
-    try {
-      await bookAppointment({ email: patient.email, reason: vitalsForm.doubt });
-      toast.success("Appointment Request Sent to Doctor");
-    } catch (e) {
-      toast.error("Booking Error");
-    }
-  };
-
-  if (!patient) return <div className="p-20 text-center text-blue-600 font-black tracking-tighter text-2xl animate-pulse">AUTHENTICATING...</div>;
+  if (!patient) return <div className="p-20 text-blue-800 font-black">LOADING...</div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-10 font-sans">
+    <div className="min-h-screen bg-slate-50 p-6 md:p-10">
       <div className="max-w-6xl mx-auto">
         
-        {/* RESTORED HEADER: LOGOUT, NAME, EMAIL, AND BOLD HEADING */}
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 border-b-4 border-blue-600 pb-8 gap-4">
+        {/* HEADER RESTORED */}
+        <header className="flex justify-between items-center mb-10 border-b-4 border-blue-600 pb-8">
           <div>
-            <h1 className="text-5xl font-black text-blue-800 uppercase italic tracking-tighter">
-              PATIENT DASHBOARD
-            </h1>
-            <div className="flex items-center gap-3 mt-2">
-                <div className="bg-blue-600 p-1 rounded-md">
-                    <User size={16} className="text-white" />
-                </div>
-                <p className="text-blue-900 font-black text-lg uppercase">{patient.name || "BALAJI D"}</p>
-                <span className="text-slate-300">|</span>
-                <p className="text-blue-500 font-bold text-sm">{patient.email}</p>
+            <h1 className="text-5xl font-black text-blue-900 uppercase italic">PATIENT DASHBOARD</h1>
+            <div className="flex items-center gap-4 mt-2">
+                <span className="bg-blue-700 text-white px-3 py-1 rounded font-black flex items-center gap-2 uppercase text-xs">
+                    <User size={14}/> {patient.name || "BALAJI D"}
+                </span>
+                <span className="text-blue-500 font-bold text-sm">{patient.email}</span>
             </div>
           </div>
-          
-          <button 
-            onClick={handleLogout}
-            className="flex items-center gap-2 bg-red-50 text-red-600 px-6 py-3 rounded-2xl font-black hover:bg-red-600 hover:text-white transition-all border border-red-100 shadow-sm"
-          >
+          <button onClick={handleLogout} className="flex items-center gap-2 bg-red-600 text-white px-6 py-3 rounded-xl font-black shadow-lg">
             <LogOut size={20} /> LOGOUT
           </button>
         </header>
 
-        <div className="flex flex-wrap gap-4 mb-8">
-          <button onClick={() => setActiveTab('summary')} className={`px-10 py-4 rounded-2xl font-black uppercase tracking-widest transition-all ${activeTab === 'summary' ? 'bg-blue-700 text-white shadow-xl' : 'bg-white text-blue-400 border border-blue-100'}`}>Overview</button>
-          <button onClick={() => setActiveTab('update')} className={`px-10 py-4 rounded-2xl font-black uppercase tracking-widest transition-all ${activeTab === 'update' ? 'bg-blue-700 text-white shadow-xl' : 'bg-white text-blue-400 border border-blue-100'}`}>Edit Vitals</button>
-          <button onClick={handleBook} className="md:ml-auto px-10 py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase tracking-widest flex items-center gap-2 shadow-lg hover:bg-emerald-700 transition-all">
-            <CalendarPlus size={20}/> Request Appointment
+        <div className="flex gap-4 mb-10">
+          <button onClick={() => setActiveTab('summary')} className={`px-8 py-4 rounded-xl font-black ${activeTab === 'summary' ? 'bg-blue-700 text-white shadow-xl' : 'bg-white text-blue-400'}`}>OVERVIEW</button>
+          <button onClick={() => setActiveTab('update')} className={`px-8 py-4 rounded-xl font-black ${activeTab === 'update' ? 'bg-blue-700 text-white shadow-xl' : 'bg-white text-blue-400'}`}>EDIT VITALS</button>
+          <button onClick={async () => { try { await bookAppointment({ email: patient.email }); toast.success("Request Sent"); } catch(e) { toast.error("Failed"); } }} 
+            className="ml-auto px-8 py-4 bg-emerald-600 text-white rounded-xl font-black flex items-center gap-2 shadow-lg">
+            <CalendarPlus size={20}/> BOOK APPOINTMENT
           </button>
         </div>
 
         {activeTab === 'summary' ? (
           <div className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="bg-white p-12 rounded-[3rem] border-l-[12px] border-blue-600 shadow-sm">
-                <div className="flex items-center gap-2 text-blue-600 mb-4">
-                  <Thermometer size={28} />
-                  <span className="text-sm font-black uppercase tracking-[0.2em]">Blood Pressure</span>
-                </div>
-                <p className="text-7xl font-black text-slate-800 tracking-tighter">{patient.bloodPressure || "0/0"}</p>
+              <div className="bg-white p-12 rounded-[2.5rem] border-l-[10px] border-blue-600 shadow-sm">
+                <div className="flex items-center gap-2 text-blue-500 mb-2"><Thermometer size={20}/><span className="text-xs font-black uppercase">Blood Pressure</span></div>
+                <p className="text-6xl font-black">{patient.bloodPressure || "120/80"}</p>
               </div>
-              <div className="bg-white p-12 rounded-[3rem] border-l-[12px] border-red-500 shadow-sm">
-                <div className="flex items-center gap-2 text-red-500 mb-4">
-                  <Heart size={28} />
-                  <span className="text-sm font-black uppercase tracking-[0.2em]">Heart Rate</span>
-                </div>
-                <p className="text-7xl font-black text-slate-800 tracking-tighter">{patient.heartRate || "0"} <span className="text-2xl text-slate-300 uppercase">Bpm</span></p>
+              <div className="bg-white p-12 rounded-[2.5rem] border-l-[10px] border-red-500 shadow-sm">
+                <div className="flex items-center gap-2 text-red-500 mb-2"><Heart size={20}/><span className="text-xs font-black uppercase">Heart Rate</span></div>
+                <p className="text-6xl font-black">{patient.heartRate || "72"}</p>
               </div>
             </div>
 
-            {/* AI REPORT AREA - LARGE AND CLEAN */}
-            <div className="bg-white rounded-[3.5rem] p-12 shadow-2xl border border-blue-50 relative overflow-hidden">
-               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-12">
-                  <div className="flex items-center gap-5">
-                    <div className="bg-blue-800 p-5 rounded-[1.5rem] text-white shadow-2xl">
-                      <BrainCircuit size={48} />
-                    </div>
-                    <div>
-                        <h2 className="text-4xl font-black text-blue-900 uppercase italic leading-none">AI Diagnostic Report</h2>
-                        <p className="text-blue-400 font-bold mt-2">Powered by Google Gemini Clinical Analysis</p>
-                    </div>
-                  </div>
-                  <button onClick={handleRunAI} disabled={aiLoading} className="bg-blue-700 text-white px-12 py-6 rounded-[2rem] font-black uppercase tracking-[0.15em] hover:bg-blue-900 transition-all flex items-center gap-4 shadow-2xl active:scale-95">
-                    {aiLoading ? <RefreshCw className="animate-spin" /> : <><FileText size={24}/> Generate Full Analysis</>}
+            <div className="bg-white rounded-[3rem] p-12 shadow-2xl border border-blue-50">
+               <div className="flex justify-between items-center mb-10">
+                  <h2 className="text-3xl font-black text-blue-900 uppercase flex items-center gap-4"><BrainCircuit size={40}/> AI Diagnostic Report</h2>
+                  <button onClick={handleRunAI} disabled={aiLoading} className="bg-blue-700 text-white px-10 py-4 rounded-2xl font-black flex items-center gap-3">
+                    {aiLoading ? <RefreshCw className="animate-spin" /> : <><FileText/> GENERATE FULL PAGE</>}
                   </button>
                </div>
-
-               {diagnosis ? (
-                 <div className="bg-slate-50/50 rounded-[2.5rem] p-12 border-2 border-dashed border-blue-200 min-h-[600px] shadow-inner">
-                    <div className="prose prose-blue max-w-none text-slate-700 font-medium leading-[1.8] text-xl" 
-                         dangerouslySetInnerHTML={{ __html: diagnosis }} />
-                 </div>
-               ) : (
-                 <div className="py-40 text-center bg-slate-50 rounded-[2.5rem] border-2 border-dashed border-slate-200">
-                    <p className="text-slate-300 font-black text-2xl uppercase tracking-[0.2em]">Ready for Clinical Processing</p>
-                    <p className="text-slate-400 font-medium mt-2">Click the button above to synthesize your health metrics.</p>
-                 </div>
-               )}
+               <div className="prose prose-blue max-w-none text-xl leading-relaxed text-slate-700 min-h-[400px]" dangerouslySetInnerHTML={{ __html: diagnosis || "Click Generate to start analysis." }} />
             </div>
           </div>
         ) : (
-          <div className="bg-white p-12 rounded-[3.5rem] shadow-2xl border border-blue-50">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-10">
-                <div className="space-y-4">
-                   <label className="text-sm font-black uppercase text-blue-900 ml-4">Current Blood Pressure</label>
-                   <input type="text" value={vitalsForm.bp} onChange={(e)=>setVitalsForm({...vitalsForm, bp: e.target.value})} className="w-full bg-slate-50 border-2 border-slate-100 p-8 rounded-[2rem] font-black text-blue-700 text-3xl outline-none focus:border-blue-500 transition-all shadow-inner" placeholder="120/80" />
-                </div>
-                <div className="space-y-4">
-                   <label className="text-sm font-black uppercase text-blue-900 ml-4">Current Heart Rate (BPM)</label>
-                   <input type="text" value={vitalsForm.hr} onChange={(e)=>setVitalsForm({...vitalsForm, hr: e.target.value})} className="w-full bg-slate-50 border-2 border-slate-100 p-8 rounded-[2rem] font-black text-blue-700 text-3xl outline-none focus:border-blue-500 transition-all shadow-inner" placeholder="72" />
-                </div>
+          <div className="bg-white p-12 rounded-[3rem] shadow-xl border border-blue-50 space-y-8">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <input type="text" value={vitalsForm.bp} onChange={(e)=>setVitalsForm({...vitalsForm, bp: e.target.value})} className="p-8 bg-slate-50 border-2 rounded-2xl font-black text-2xl text-blue-700" placeholder="BP (120/80)" />
+                <input type="text" value={vitalsForm.hr} onChange={(e)=>setVitalsForm({...vitalsForm, hr: e.target.value})} className="p-8 bg-slate-50 border-2 rounded-2xl font-black text-2xl text-blue-700" placeholder="HR (72)" />
              </div>
-             <div className="mb-12 space-y-4">
-                <label className="text-sm font-black uppercase text-blue-900 ml-4">Detailed Symptoms / Medical Background</label>
-                <textarea value={vitalsForm.doubt} onChange={(e)=>setVitalsForm({...vitalsForm, doubt: e.target.value})} className="w-full bg-slate-50 border-2 border-slate-100 p-8 rounded-[2rem] h-56 font-semibold text-slate-700 text-lg outline-none focus:border-blue-500 transition-all shadow-inner" placeholder="Type clinical notes here..." />
-             </div>
-             <button onClick={handleUpdate} disabled={loading} className="w-full bg-blue-700 py-10 rounded-[2.5rem] text-white font-black text-3xl hover:bg-blue-800 transition-all shadow-2xl flex items-center justify-center gap-6 active:scale-95">
-                {loading ? <RefreshCw className="animate-spin" /> : <><Save size={36}/> SAVE TO MEDICAL CLOUD</>}
-             </button>
+             <textarea value={vitalsForm.doubt} onChange={(e)=>setVitalsForm({...vitalsForm, doubt: e.target.value})} className="w-full p-8 bg-slate-50 border-2 rounded-2xl h-48 font-bold text-lg" placeholder="Medical History..." />
+             <button onClick={handleUpdate} className="w-full bg-blue-700 py-8 rounded-2xl text-white font-black text-2xl shadow-xl flex items-center justify-center gap-4"><Save size={28}/> SAVE TO CLOUD</button>
           </div>
         )}
       </div>
     </div>
   );
 };
-
 export default PatientDashboard;
