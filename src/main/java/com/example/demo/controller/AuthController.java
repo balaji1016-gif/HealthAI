@@ -33,7 +33,12 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Patient loginRequest) {
-        Optional<Patient> patient = patientRepository.findByEmail(loginRequest.getEmail());
+        if (loginRequest.getEmail() == null) return ResponseEntity.badRequest().body("Email required");
+        
+        // Normalize email for search
+        String searchEmail = loginRequest.getEmail().toLowerCase().trim();
+        Optional<Patient> patient = patientRepository.findByEmail(searchEmail);
+        
         if (patient.isPresent() && patient.get().getPassword().equals(loginRequest.getPassword())) {
             return ResponseEntity.ok(patient.get());
         }
@@ -44,6 +49,8 @@ public class AuthController {
     public ResponseEntity<?> register(@RequestBody Patient newPatient) {
         try {
             if (newPatient.getEmail() == null) return ResponseEntity.badRequest().body("Email required");
+            // Ensure email is stored in lowercase
+            newPatient.setEmail(newPatient.getEmail().toLowerCase().trim());
             if (newPatient.getRole() == null) newPatient.setRole("PATIENT");
             return ResponseEntity.ok(patientRepository.save(newPatient));
         } catch (Exception e) {
@@ -54,17 +61,27 @@ public class AuthController {
     @PutMapping("/update-vitals")
     public ResponseEntity<?> updateVitals(@RequestBody Patient updatedData) {
         try {
-            Optional<Patient> existingPatient = patientRepository.findByEmail(updatedData.getEmail());
+            if (updatedData.getEmail() == null) {
+                return ResponseEntity.badRequest().body("Error: Email is missing in request");
+            }
+
+            // Normalize email to ensure match
+            String searchEmail = updatedData.getEmail().toLowerCase().trim();
+            Optional<Patient> existingPatient = patientRepository.findByEmail(searchEmail);
+
             if (existingPatient.isPresent()) {
                 Patient patient = existingPatient.get();
                 patient.setBloodPressure(updatedData.getBloodPressure());
                 patient.setHeartRate(updatedData.getHeartRate());
+                
                 if(updatedData.getMedicalHistory() != null) {
                     patient.setMedicalHistory(updatedData.getMedicalHistory());
                 }
-                return ResponseEntity.ok(patientRepository.save(patient));
+                
+                Patient saved = patientRepository.save(patient);
+                return ResponseEntity.ok(saved);
             }
-            return ResponseEntity.status(404).body("Patient not found");
+            return ResponseEntity.status(404).body("Patient not found with email: " + searchEmail);
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Update failed: " + e.getMessage());
         }
@@ -73,7 +90,8 @@ public class AuthController {
     @PostMapping("/diagnose")
     public ResponseEntity<?> runDiagnostic(@RequestBody Patient patientData) {
         try {
-            Optional<Patient> patient = patientRepository.findByEmail(patientData.getEmail());
+            String searchEmail = patientData.getEmail().toLowerCase().trim();
+            Optional<Patient> patient = patientRepository.findByEmail(searchEmail);
             if (patient.isPresent()) {
                 String insight = aiHealthService.generateClinicalInsight(patient.get());
                 return ResponseEntity.ok().body("{\"summary\": \"" + insight + "\"}");
