@@ -12,23 +12,23 @@ public class AiHealthService {
     private GoogleGenAiChatModel chatModel;
 
     public String generateClinicalInsight(Patient patient) {
-        String prompt = String.format(
-            "Act as a professional Clinical Cardiologist. Generate a detailed, FULL-PAGE medical analysis report based on these CURRENT vitals:\n\n" +
-            "Blood Pressure: %s\n" +
-            "Heart Rate: %s BPM\n" +
-            "Symptoms/History: %s\n\n" +
-            "The report MUST include these sections in bold:\n" +
-            "1. CLINICAL SUMMARY: Detailed interpretation of these specific numbers.\n" +
-            "2. CARDIOVASCULAR RISK ASSESSMENT: Analyze the correlation between BP and Heart Rate.\n" +
-            "3. PHYSIOLOGICAL IMPACT: How these metrics affect organ health.\n" +
-            "4. LIFESTYLE & DIETARY INTERVENTIONS: Specific, actionable advice.\n" +
-            "5. MEDICAL PRECAUTIONS: Necessary follow-up steps.\n\n" +
-            "Write at least 450 words. Use a professional medical tone. If BP > 140/90 or HR > 100, provide a high-priority warning.",
-            patient.getBloodPressure(),
-            patient.getHeartRate(),
-            patient.getMedicalHistory()
-        );
+        try {
+            String bp = (patient.getBloodPressure() != null) ? patient.getBloodPressure() : "Not Provided";
+            String hr = (patient.getHeartRate() != null) ? patient.getHeartRate() : "Not Provided";
+            String history = (patient.getMedicalHistory() != null) ? patient.getMedicalHistory() : "None";
 
-        return chatModel.call(prompt);
+            String prompt = String.format(
+                "Act as a professional Health Analyst. Provide a detailed analysis based on:\n" +
+                "BP: %s, Heart Rate: %s, History: %s.\n\n" +
+                "Structure the report with these Bold headers:\n" +
+                "1. CLINICAL SUMMARY\n2. RISK ASSESSMENT\n3. LIFESTYLE ADVICE\n4. PRECAUTIONS.\n\n" +
+                "Write 450 words. Professional tone.",
+                bp, hr, history
+            );
+
+            return chatModel.call(prompt);
+        } catch (Exception e) {
+            return "AI Error: Safety filters triggered or API Key invalid. Details: " + e.getMessage();
+        }
     }
 }
