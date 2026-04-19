@@ -44,7 +44,6 @@ public class AuthController {
     public ResponseEntity<?> register(@RequestBody Patient newPatient) {
         try {
             if (newPatient.getEmail() == null) return ResponseEntity.badRequest().body("Email required");
-            // Defaulting role if not sent, though frontend should handle this
             if (newPatient.getRole() == null) newPatient.setRole("PATIENT");
             return ResponseEntity.ok(patientRepository.save(newPatient));
         } catch (Exception e) {
@@ -52,7 +51,6 @@ public class AuthController {
         }
     }
 
-    // THE FIX: PUT mapping to update existing patient vitals
     @PutMapping("/update-vitals")
     public ResponseEntity<?> updateVitals(@RequestBody Patient updatedData) {
         try {
@@ -77,7 +75,6 @@ public class AuthController {
         try {
             Optional<Patient> patient = patientRepository.findByEmail(patientData.getEmail());
             if (patient.isPresent()) {
-                // Now pulls the UPDATED data from the DB
                 String insight = aiHealthService.generateClinicalInsight(patient.get());
                 return ResponseEntity.ok().body("{\"summary\": \"" + insight + "\"}");
             }
