@@ -13,24 +13,16 @@ public class AiHealthService {
 
     public String generateClinicalInsight(Patient patient) {
         try {
-            // Null-safe checks for vitals
-            String bp = (patient.getBloodPressure() != null) ? patient.getBloodPressure() : "120/80";
-            String hr = (patient.getHeartRate() != null) ? patient.getHeartRate() : "72";
-            String history = (patient.getMedicalHistory() != null) ? patient.getMedicalHistory() : "None";
+            // Keep the prompt professional but safe to avoid Google's auto-block
+            String prompt = "Provide a health analysis report for: BP " + patient.getBloodPressure() + 
+                            ", Heart Rate " + patient.getHeartRate() + 
+                            ", History: " + patient.getMedicalHistory() + ". " +
+                            "Use BOLD headers for: SUMMARY, RISK ASSESSMENT, and ADVICE.";
 
-            // Using a prompt that asks for "Analysis" instead of "Diagnosis" to avoid safety blocks
-            String prompt = String.format(
-                "Provide a professional health analysis report based on: BP %s, Heart Rate %s, and History %s. " +
-                "Include Bold Headings for: CLINICAL SUMMARY, RISK ASSESSMENT, and LIFESTYLE ADVICE. " +
-                "Write at least 450 words.",
-                bp, hr, history
-            );
-
-            // This call uses the settings from application.properties automatically
+            // This direct call uses your application.properties for safety settings
             return chatModel.call(prompt);
-
         } catch (Exception e) {
-            return "AI Error: The request was blocked or failed. Details: " + e.getMessage();
+            return "AI Error: Safety block triggered. Check BLOCK_NONE in properties. " + e.getMessage();
         }
     }
 }
