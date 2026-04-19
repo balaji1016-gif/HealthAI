@@ -17,18 +17,16 @@ public class Patient {
     private String bloodPressure;
     private String heartRate;
     
-    // Using columnDefinition = "TEXT" prevents 500 errors when medical history is long
     @Column(columnDefinition = "TEXT")
     private String medicalHistory;
 
     private String role = "PATIENT";
 
-    // Required for the AI Service to work without crashing
     public String getId() {
         return this.email;
     }
 
-    // Standard Getters and Setters
+    // Getters and Setters
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
     public String getName() { return name; }
