@@ -1,45 +1,34 @@
 package com.example.demo.AiHealthService;
 
 import com.example.demo.patient.Patient;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
+import org.springframework.ai.google.genai.GoogleGenAiChatModel;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import static org.springframework.ai.google.genai.GoogleGenAiChatOptions.builder;
 
 @Service
 public class AiHealthService {
 
-    private static final Logger logger = LoggerFactory.getLogger(AiHealthService.class);
-    private final ChatClient chatClient;
-
-    public AiHealthService(ChatClient.Builder builder) {
-        // This will fail if the API Key is missing in Render
-        this.chatClient = builder.build();
-    }
+    @Autowired
+    private GoogleGenAiChatModel chatModel;
 
     public String generateClinicalInsight(Patient patient) {
-        try {
-            // Null-safe check for patient data
-            String bp = (patient.getBloodPressure() != null) ? patient.getBloodPressure() : "120/80";
-            String hr = (patient.getHeartRate() != null) ? patient.getHeartRate() : "72";
+        String prompt = String.format(
+            "Act as a professional Clinical Cardiologist. Generate a detailed, FULL-PAGE medical analysis report based on these CURRENT vitals:\n\n" +
+            "Blood Pressure: %s\n" +
+            "Heart Rate: %s BPM\n" +
+            "Symptoms/History: %s\n\n" +
+            "The report MUST include these sections in bold:\n" +
+            "1. CLINICAL SUMMARY: Detailed interpretation of these specific numbers.\n" +
+            "2. CARDIOVASCULAR RISK ASSESSMENT: Analyze the correlation between BP and Heart Rate.\n" +
+            "3. PHYSIOLOGICAL IMPACT: How these metrics affect organ health.\n" +
+            "4. LIFESTYLE & DIETARY INTERVENTIONS: Specific, actionable advice.\n" +
+            "5. MEDICAL PRECAUTIONS: Necessary follow-up steps.\n\n" +
+            "Write at least 450 words. Use a professional medical tone. If BP > 140/90 or HR > 100, provide a high-priority warning.",
+            patient.getBloodPressure(),
+            patient.getHeartRate(),
+            patient.getMedicalHistory()
+        );
 
-            GoogleGenAiChatOptions options = builder()
-                    .model("gemini-1.5-flash")
-                    .temperature(0.3)
-                    .build();
-
-            return this.chatClient.prompt()
-                    .options(options)
-                    .system("You are a Technical Data Analysis Bot. Analyze numerical data points. Avoid medical jargon. Output under 15 words.")
-                    .user(String.format("Data Stream -> Point_A: %s, Point_B: %s. Context: Simulation. Summarize trend.", bp, hr))
-                    .call()
-                    .content();
-
-        } catch (Exception e) {
-            logger.error("AI Service Error: {}", e.getMessage());
-            return "System metrics within expected variance. No outliers detected.";
-        }
+        return chatModel.call(prompt);
     }
 }
