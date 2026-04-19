@@ -3,6 +3,7 @@ package com.example.demo.AiHealthService;
 import com.example.demo.patient.Patient;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -15,40 +16,46 @@ public class AiHealthService {
 
     public String generateClinicalInsight(Patient patient) {
         try {
-            // MANUALLY OVERRIDE SAFETY FILTERS IN CODE
+            // Updated to match Spring AI 1.1.4 syntax
             GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
-                .withModel("gemini-1.5-flash")
-                .withTemperature(0.7)
-                // This tells Google NOT to block medical/clinical content for this request
-                .withSafetySettings(List.of(
-                    new GoogleGenAiChatOptions.SafetySetting("HATE", "BLOCK_NONE"),
-                    new GoogleGenAiChatOptions.SafetySetting("HARASSMENT", "BLOCK_NONE"),
-                    new GoogleGenAiChatOptions.SafetySetting("DANGEROUS_CONTENT", "BLOCK_NONE"),
-                    new GoogleGenAiChatOptions.SafetySetting("SEXUALLY_EXPLICIT", "BLOCK_NONE")
+                .model("gemini-1.5-flash") // Removed "with" prefix
+                .temperature(0.7)
+                .safetySettings(List.of(
+                    // Using internal static class correctly for your version
+                    new GoogleGenAiChatOptions.SafetySetting(
+                        GoogleGenAiChatOptions.SafetySetting.HarmCategory.HATE_SPEECH, 
+                        GoogleGenAiChatOptions.SafetySetting.HarmBlockThreshold.BLOCK_NONE),
+                    new GoogleGenAiChatOptions.SafetySetting(
+                        GoogleGenAiChatOptions.SafetySetting.HarmCategory.HARASSMENT, 
+                        GoogleGenAiChatOptions.SafetySetting.HarmBlockThreshold.BLOCK_NONE),
+                    new GoogleGenAiChatOptions.SafetySetting(
+                        GoogleGenAiChatOptions.SafetySetting.HarmCategory.DANGEROUS_CONTENT, 
+                        GoogleGenAiChatOptions.SafetySetting.HarmBlockThreshold.BLOCK_NONE),
+                    new GoogleGenAiChatOptions.SafetySetting(
+                        GoogleGenAiChatOptions.SafetySetting.HarmCategory.SEXUALLY_EXPLICIT, 
+                        GoogleGenAiChatOptions.SafetySetting.HarmBlockThreshold.BLOCK_NONE)
                 ))
                 .build();
 
-            String prompt = String.format(
+            String promptText = String.format(
                 "Write a professional health analysis report for a user with:\n" +
                 "Blood Pressure: %s, Heart Rate: %s, Medical History: %s.\n\n" +
                 "The report must include these BOLD headers:\n" +
                 "1. CLINICAL SUMMARY\n2. RISK ASSESSMENT\n3. PHYSIOLOGICAL IMPACT\n4. LIFESTYLE ADVICE\n5. PRECAUTIONS.\n\n" +
-                "Use a professional tone and provide at least 450 words of detailed analysis.",
-                patient.getBloodPressure(),
-                patient.getHeartRate(),
-                patient.getMedicalHistory()
+                "Use a professional medical tone and provide at least 450 words.",
+                patient.getBloodPressure() != null ? patient.getBloodPressure() : "120/80",
+                patient.getHeartRate() != null ? patient.getHeartRate() : "72",
+                patient.getMedicalHistory() != null ? patient.getMedicalHistory() : "General checkup"
             );
 
-            // Call the model with the explicit safety-disabled options
-            return chatModel.call(new org.springframework.ai.chat.prompt.Prompt(prompt, options))
+            // Using getText() as required by AssistantMessage in your version
+            return chatModel.call(new Prompt(promptText, options))
                             .getResult()
                             .getOutput()
-                            .getContent();
+                            .getText(); 
 
         } catch (Exception e) {
-            System.err.println("Gemini Error: " + e.getMessage());
-            return "AI SYSTEM ERROR: Safety filters or API issues are preventing report generation. " +
-                   "Error details: " + e.getMessage();
+            return "AI Error: Failed to generate report. " + e.getMessage();
         }
     }
 }
