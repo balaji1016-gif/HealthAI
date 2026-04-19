@@ -22,50 +22,16 @@ public class AuthController {
     @Autowired
     private AiHealthService aiHealthService;
 
-    @GetMapping("/patients")
-    public ResponseEntity<List<Patient>> getAllPatients() {
-        try {
-            return ResponseEntity.ok(patientRepository.findAll());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Patient loginRequest) {
-        if (loginRequest.getEmail() == null) return ResponseEntity.badRequest().body("Email required");
-        
-        // Normalize email for search
-        String searchEmail = loginRequest.getEmail().toLowerCase().trim();
-        Optional<Patient> patient = patientRepository.findByEmail(searchEmail);
-        
-        if (patient.isPresent() && patient.get().getPassword().equals(loginRequest.getPassword())) {
-            return ResponseEntity.ok(patient.get());
-        }
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials.");
-    }
-
-    @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody Patient newPatient) {
-        try {
-            if (newPatient.getEmail() == null) return ResponseEntity.badRequest().body("Email required");
-            // Ensure email is stored in lowercase
-            newPatient.setEmail(newPatient.getEmail().toLowerCase().trim());
-            if (newPatient.getRole() == null) newPatient.setRole("PATIENT");
-            return ResponseEntity.ok(patientRepository.save(newPatient));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error: " + e.getMessage());
-        }
-    }
-
     @PutMapping("/update-vitals")
     public ResponseEntity<?> updateVitals(@RequestBody Patient updatedData) {
+        // DEBUG LOG - Check Render Logs for this line!
+        System.out.println(">>> API HIT: update-vitals called for email: " + updatedData.getEmail());
+        
         try {
             if (updatedData.getEmail() == null) {
-                return ResponseEntity.badRequest().body("Error: Email is missing in request");
+                return ResponseEntity.badRequest().body("Error: Email missing");
             }
 
-            // Normalize email to ensure match
             String searchEmail = updatedData.getEmail().toLowerCase().trim();
             Optional<Patient> existingPatient = patientRepository.findByEmail(searchEmail);
 
@@ -78,20 +44,43 @@ public class AuthController {
                     patient.setMedicalHistory(updatedData.getMedicalHistory());
                 }
                 
-                Patient saved = patientRepository.save(patient);
-                return ResponseEntity.ok(saved);
+                return ResponseEntity.ok(patientRepository.save(patient));
             }
-            return ResponseEntity.status(404).body("Patient not found with email: " + searchEmail);
+            return ResponseEntity.status(404).body("Patient not found");
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Update failed: " + e.getMessage());
+            return ResponseEntity.status(500).body("Error: " + e.getMessage());
         }
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody Patient loginRequest) {
+        String searchEmail = loginRequest.getEmail().toLowerCase().trim();
+        Optional<Patient> patient = patientRepository.findByEmail(searchEmail);
+        if (patient.isPresent() && patient.get().getPassword().equals(loginRequest.getPassword())) {
+            return ResponseEntity.ok(patient.get());
+        }
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials.");
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody Patient newPatient) {
+        try {
+            newPatient.setEmail(newPatient.getEmail().toLowerCase().trim());
+            return ResponseEntity.ok(patientRepository.save(newPatient));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/patients")
+    public ResponseEntity<List<Patient>> getAllPatients() {
+        return ResponseEntity.ok(patientRepository.findAll());
     }
 
     @PostMapping("/diagnose")
     public ResponseEntity<?> runDiagnostic(@RequestBody Patient patientData) {
         try {
-            String searchEmail = patientData.getEmail().toLowerCase().trim();
-            Optional<Patient> patient = patientRepository.findByEmail(searchEmail);
+            Optional<Patient> patient = patientRepository.findByEmail(patientData.getEmail().toLowerCase().trim());
             if (patient.isPresent()) {
                 String insight = aiHealthService.generateClinicalInsight(patient.get());
                 return ResponseEntity.ok().body("{\"summary\": \"" + insight + "\"}");
