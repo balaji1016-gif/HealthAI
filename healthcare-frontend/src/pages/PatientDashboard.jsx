@@ -1,130 +1,127 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { getPatients, getAiAssessment, updateVitals, bookAppointment } from '../api';
-import { Activity, BrainCircuit, Heart, Thermometer, RefreshCw, Calendar, Save, MessageSquare } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import React, { useEffect, useState } from 'react';
+import { getPatients, getAiAssessment, updateVitals } from '../api';
+import { Activity, Heart, Thermometer, Save, RefreshCw, BrainCircuit } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const PatientDashboard = () => {
   const [patient, setPatient] = useState(null);
   const [activeTab, setActiveTab] = useState('summary'); 
-  const [analysis, setAnalysis] = useState("");
-  const [loadingAi, setLoadingAi] = useState(false);
-  const [isReady, setIsReady] = useState(false);
   const [vitalsForm, setVitalsForm] = useState({ bp: '', hr: '', doubt: '' });
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const loadInitialData = async () => {
-      const storedData = localStorage.getItem('user');
-      if (!storedData) {
+    const loadData = () => {
+      const userData = localStorage.getItem('user');
+      if (!userData) {
         window.location.href = '/login';
         return;
       }
-      const user = JSON.parse(storedData);
+      const user = JSON.parse(userData);
       setPatient(user);
       setVitalsForm({ 
         bp: user.bloodPressure || '', 
         hr: user.heartRate || '', 
         doubt: user.medicalHistory || '' 
       });
-      try {
-        const res = await getPatients(user.email);
-        if (res.data) {
-          setPatient(res.data);
-          localStorage.setItem('user', JSON.stringify(res.data));
-        }
-      } catch (err) {
-        console.error("Fetch error:", err);
-      }
-      setTimeout(() => setIsReady(true), 500);
     };
-    loadInitialData();
+    loadData();
   }, []);
 
   const handleUpdateVitals = async () => {
+    if (!vitalsForm.bp || !vitalsForm.hr) {
+      toast.error("Please fill in BP and Heart Rate");
+      return;
+    }
+
+    setLoading(true);
     try {
-      const res = await updateVitals({ 
+      // payload matches Patient.java fields exactly
+      const payload = { 
         email: patient.email, 
         bloodPressure: vitalsForm.bp, 
         heartRate: vitalsForm.hr,
         medicalHistory: vitalsForm.doubt 
-      });
-      if (res.status === 200 || res.status === 201) {
-        toast.success("Health updates saved!");
-        const updatedUser = { ...patient, bloodPressure: vitalsForm.bp, heartRate: vitalsForm.hr, medicalHistory: vitalsForm.doubt };
+      };
+
+      const res = await updateVitals(payload);
+
+      if (res.status === 200) {
+        toast.success("Vitals Updated Successfully");
+        const updatedUser = { ...patient, ...payload };
         setPatient(updatedUser);
         localStorage.setItem('user', JSON.stringify(updatedUser));
         setActiveTab('summary');
       }
     } catch (e) {
-      toast.error("Update failed");
-    }
-  };
-
-  const handleAiCheck = async () => {
-    setLoadingAi(true);
-    try {
-      const res = await getAiAssessment(patient.email);
-      setAnalysis(res.data.summary || "Vitals are within range.");
-      toast.success("AI Analysis Complete");
-    } catch (err) {
-      setAnalysis("AI is processing. Please retry.");
+      const errorMsg = e.response?.data || "Server connection error";
+      toast.error(errorMsg);
+      console.error("Update Error:", e);
     } finally {
-      setLoadingAi(false);
+      setLoading(false);
     }
   };
 
-  const trendData = [{ name: '08:00', hr: 70 }, { name: '10:00', hr: 75 }, { name: '12:00', hr: 82 }, { name: '14:00', hr: 74 }, { name: '16:00', hr: 78 }];
-
-  if (!patient) return <div className="min-h-screen flex items-center justify-center"><RefreshCw className="animate-spin" /></div>;
+  if (!patient) return <div className="flex h-screen items-center justify-center font-bold">Loading...</div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8">
-      <div className="max-w-5xl mx-auto">
+    <div className="min-h-screen bg-slate-50 p-6 md:p-12">
+      <div className="max-w-4xl mx-auto">
         <header className="flex justify-between items-center mb-10">
-          <div className="flex items-center gap-3">
-            <Activity className="text-indigo-600" size={32} />
-            <h1 className="text-3xl font-black text-slate-800 uppercase">Patient Portal</h1>
+          <div className="flex items-center gap-2">
+            <Activity className="text-indigo-600" size={30} />
+            <h1 className="text-2xl font-black uppercase">Patient Dashboard</h1>
+          </div>
+          <div className="text-right">
+            <p className="text-xs font-bold text-slate-400 uppercase">Logged in as</p>
+            <p className="font-bold text-slate-800">{patient.email}</p>
           </div>
         </header>
 
         <div className="flex gap-2 mb-8 bg-slate-200 p-1 rounded-2xl w-fit">
-          <button onClick={() => setActiveTab('summary')} className={`px-6 py-2 rounded-xl font-bold ${activeTab === 'summary' ? 'bg-white text-indigo-600' : 'text-slate-500'}`}>Summary</button>
-          <button onClick={() => setActiveTab('update')} className={`px-6 py-2 rounded-xl font-bold ${activeTab === 'update' ? 'bg-white text-indigo-600' : 'text-slate-500'}`}>Update</button>
+          <button onClick={() => setActiveTab('summary')} className={`px-8 py-3 rounded-xl font-bold transition-all ${activeTab === 'summary' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>Overview</button>
+          <button onClick={() => setActiveTab('update')} className={`px-8 py-3 rounded-xl font-bold transition-all ${activeTab === 'update' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>Update Vitals</button>
         </div>
 
-        <div className="bg-white rounded-3xl shadow-xl p-8 mb-8">
+        <div className="bg-white rounded-[2rem] shadow-xl p-8 border border-slate-100">
           {activeTab === 'summary' ? (
-            <div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div className="bg-blue-50 p-6 rounded-2xl">
-                  <span className="flex items-center gap-2 text-blue-600 font-bold uppercase text-xs mb-2"><Thermometer size={16}/> BP</span>
-                  <p className="text-3xl font-black">{patient.bloodPressure || 'N/A'}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-blue-50/50 p-8 rounded-3xl border border-blue-100">
+                <div className="flex items-center gap-2 text-blue-500 mb-2">
+                  <Thermometer size={18} />
+                  <span className="text-xs font-black uppercase">Blood Pressure</span>
                 </div>
-                <div className="bg-red-50 p-6 rounded-2xl">
-                  <span className="flex items-center gap-2 text-red-600 font-bold uppercase text-xs mb-2"><Heart size={16}/> Heart Rate</span>
-                  <p className="text-3xl font-black">{patient.heartRate || 'N/A'} BPM</p>
-                </div>
+                <p className="text-4xl font-black text-slate-800">{patient.bloodPressure || 'N/A'}</p>
               </div>
-              <button onClick={handleAiCheck} disabled={loadingAi} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black hover:bg-black transition-all">
-                {loadingAi ? "ANALYZING..." : "RUN AI DIAGNOSIS"}
-              </button>
+              <div className="bg-red-50/50 p-8 rounded-3xl border border-red-100">
+                <div className="flex items-center gap-2 text-red-500 mb-2">
+                  <Heart size={18} />
+                  <span className="text-xs font-black uppercase">Heart Rate</span>
+                </div>
+                <p className="text-4xl font-black text-slate-800">{patient.heartRate || '0'} <small className="text-sm">BPM</small></p>
+              </div>
             </div>
           ) : (
             <div className="space-y-6">
-              <input type="text" placeholder="BP (120/80)" value={vitalsForm.bp} onChange={(e)=>setVitalsForm({...vitalsForm, bp: e.target.value})} className="w-full p-4 bg-slate-50 border rounded-xl" />
-              <input type="text" placeholder="HR (72)" value={vitalsForm.hr} onChange={(e)=>setVitalsForm({...vitalsForm, hr: e.target.value})} className="w-full p-4 bg-slate-50 border rounded-xl" />
-              <textarea placeholder="Notes" value={vitalsForm.doubt} onChange={(e)=>setVitalsForm({...vitalsForm, doubt: e.target.value})} className="w-full p-4 bg-slate-50 border rounded-xl" rows="4" />
-              <button onClick={handleUpdateVitals} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black">SAVE UPDATES</button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-xs font-black uppercase text-slate-400 mb-2 ml-1">Current BP</label>
+                  <input type="text" value={vitalsForm.bp} onChange={(e)=>setVitalsForm({...vitalsForm, bp: e.target.value})} className="w-full p-4 bg-slate-50 border rounded-2xl font-bold focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="120/80" />
+                </div>
+                <div>
+                  <label className="block text-xs font-black uppercase text-slate-400 mb-2 ml-1">Heart Rate</label>
+                  <input type="text" value={vitalsForm.hr} onChange={(e)=>setVitalsForm({...vitalsForm, hr: e.target.value})} className="w-full p-4 bg-slate-50 border rounded-2xl font-bold focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="72" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-black uppercase text-slate-400 mb-2 ml-1">Symptoms/Notes</label>
+                <textarea value={vitalsForm.doubt} onChange={(e)=>setVitalsForm({...vitalsForm, doubt: e.target.value})} className="w-full p-4 bg-slate-50 border rounded-2xl font-medium focus:ring-2 focus:ring-indigo-500 outline-none" rows="4" placeholder="How are you feeling?" />
+              </div>
+              <button onClick={handleUpdateVitals} disabled={loading} className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-lg flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100">
+                {loading ? <RefreshCw className="animate-spin" /> : <><Save size={20}/> SAVE HEALTH DATA</>}
+              </button>
             </div>
           )}
         </div>
-
-        {analysis && (
-          <div className="bg-white p-6 rounded-3xl border-l-8 border-indigo-600 shadow-lg">
-            <h3 className="font-black mb-2 flex items-center gap-2"><BrainCircuit size={20}/> AI ASSESSMENT</h3>
-            <p className="italic text-slate-700">"{analysis}"</p>
-          </div>
-        )}
       </div>
     </div>
   );
