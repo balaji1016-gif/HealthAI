@@ -24,27 +24,18 @@ public class AuthController {
 
     @PutMapping("/update-vitals")
     public ResponseEntity<?> updateVitals(@RequestBody Patient updatedData) {
-        // DEBUG LOG - Check Render Logs for this line!
-        System.out.println(">>> API HIT: update-vitals called for email: " + updatedData.getEmail());
-        
         try {
-            if (updatedData.getEmail() == null) {
-                return ResponseEntity.badRequest().body("Error: Email missing");
-            }
-
+            if (updatedData.getEmail() == null) return ResponseEntity.badRequest().body("Email missing");
+            
             String searchEmail = updatedData.getEmail().toLowerCase().trim();
-            Optional<Patient> existingPatient = patientRepository.findByEmail(searchEmail);
+            Optional<Patient> existing = patientRepository.findByEmail(searchEmail);
 
-            if (existingPatient.isPresent()) {
-                Patient patient = existingPatient.get();
-                patient.setBloodPressure(updatedData.getBloodPressure());
-                patient.setHeartRate(updatedData.getHeartRate());
-                
-                if(updatedData.getMedicalHistory() != null) {
-                    patient.setMedicalHistory(updatedData.getMedicalHistory());
-                }
-                
-                return ResponseEntity.ok(patientRepository.save(patient));
+            if (existing.isPresent()) {
+                Patient p = existing.get();
+                p.setBloodPressure(updatedData.getBloodPressure());
+                p.setHeartRate(updatedData.getHeartRate());
+                p.setMedicalHistory(updatedData.getMedicalHistory());
+                return ResponseEntity.ok(patientRepository.save(p));
             }
             return ResponseEntity.status(404).body("Patient not found");
         } catch (Exception e) {
@@ -52,42 +43,30 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/diagnose")
+    public ResponseEntity<?> runDiagnostic(@RequestBody Patient patientData) {
+        try {
+            // Uses current data from request body to ensure AI sees new values immediately
+            String insight = aiHealthService.generateClinicalInsight(patientData);
+            String formattedInsight = insight.replace("\n", "<br/>");
+            return ResponseEntity.ok().body("{\"summary\": \"" + formattedInsight + "\"}");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("{\"summary\": \"AI Error: " + e.getMessage() + "\"}");
+        }
+    }
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Patient loginRequest) {
-        String searchEmail = loginRequest.getEmail().toLowerCase().trim();
-        Optional<Patient> patient = patientRepository.findByEmail(searchEmail);
-        if (patient.isPresent() && patient.get().getPassword().equals(loginRequest.getPassword())) {
-            return ResponseEntity.ok(patient.get());
+        Optional<Patient> p = patientRepository.findByEmail(loginRequest.getEmail().toLowerCase().trim());
+        if (p.isPresent() && p.get().getPassword().equals(loginRequest.getPassword())) {
+            return ResponseEntity.ok(p.get());
         }
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials.");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
     }
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Patient newPatient) {
-        try {
-            newPatient.setEmail(newPatient.getEmail().toLowerCase().trim());
-            return ResponseEntity.ok(patientRepository.save(newPatient));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error: " + e.getMessage());
-        }
-    }
-
-    @GetMapping("/patients")
-    public ResponseEntity<List<Patient>> getAllPatients() {
-        return ResponseEntity.ok(patientRepository.findAll());
-    }
-
-    @PostMapping("/diagnose")
-    public ResponseEntity<?> runDiagnostic(@RequestBody Patient patientData) {
-        try {
-            Optional<Patient> patient = patientRepository.findByEmail(patientData.getEmail().toLowerCase().trim());
-            if (patient.isPresent()) {
-                String insight = aiHealthService.generateClinicalInsight(patient.get());
-                return ResponseEntity.ok().body("{\"summary\": \"" + insight + "\"}");
-            }
-            return ResponseEntity.status(404).body("User not found");
-        } catch (Exception e) {
-            return ResponseEntity.ok().body("{\"summary\": \"AI Analysis: Vitals stable.\"}");
-        }
+        newPatient.setEmail(newPatient.getEmail().toLowerCase().trim());
+        return ResponseEntity.ok(patientRepository.save(newPatient));
     }
 }
