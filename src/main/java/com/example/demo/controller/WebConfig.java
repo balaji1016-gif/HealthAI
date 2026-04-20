@@ -16,6 +16,7 @@ public class WebConfig {
         CorsConfiguration config = new CorsConfiguration();
         
         config.setAllowCredentials(true);
+        // Allows your Vercel frontend to talk to Render
         config.setAllowedOriginPatterns(Arrays.asList("https://health-ai-flame.vercel.app", "*")); 
         config.setAllowedHeaders(Arrays.asList("Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With"));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
