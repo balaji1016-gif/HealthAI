@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getPatients, confirmAppointment } from '../api'; 
-import { LogOut, User, Download, Users, FileText, Search, Clock } from 'lucide-react';
+import { LogOut, User, Download, Users, Search, Clock } from 'lucide-react';
 import jsPDF from 'jspdf';
 import toast from 'react-hot-toast';
 
@@ -24,9 +24,7 @@ const DoctorDashboard = () => {
     try {
       const res = await getPatients(email);
       setPatients(Array.isArray(res.data) ? res.data : []);
-    } catch (e) { 
-      toast.error("Records Not Found"); 
-    }
+    } catch (e) { toast.error("Records Not Found"); }
   };
 
   const handleConfirm = async (patientEmail) => {
@@ -35,64 +33,40 @@ const DoctorDashboard = () => {
       await confirmAppointment({ email: patientEmail, ...scheduleData });
       toast.success(`Confirmed for ${scheduleData.date}`);
       setShowSchedule(null);
+      fetchPatients(doctor.email); // Refresh data
     } catch (e) { toast.error("Error confirming"); }
   };
 
   const downloadPDF = (patient) => {
     try {
       const doc = new jsPDF();
-      
-      // Header Section
       doc.setFontSize(22);
-      doc.setTextColor(30, 58, 138); // Your Theme Blue
+      doc.setTextColor(30, 58, 138);
       doc.text("HEALTH ASSESSMENT REPORT", 20, 20);
       
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text(`Generated on: ${new Date().toLocaleString()}`, 20, 28);
-      doc.text("-----------------------------------------------------------------------------------------", 20, 32);
-
-      // Patient Info Section
-      doc.setFontSize(14);
+      doc.setFontSize(12);
       doc.setTextColor(0, 0, 0);
       doc.setFont("helvetica", "bold");
-      doc.text("PATIENT INFORMATION", 20, 42);
-      
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "normal");
-      doc.text(`Name: ${patient.name || "N/A"}`, 20, 50);
-      doc.text(`Email: ${patient.email}`, 20, 57);
-      doc.text(`Vitals: BP ${patient.bloodPressure || 'N/A'} | HR ${patient.heartRate || 'N/A'}`, 20, 64);
-      
-      doc.text("-----------------------------------------------------------------------------------------", 20, 72);
+      doc.text(`Patient: ${patient.name || "N/A"}`, 20, 40);
+      doc.text(`Vitals: BP ${patient.bloodPressure || 'N/A'} | HR ${patient.heartRate || 'N/A'} bpm`, 20, 50);
+      doc.text("-----------------------------------------------------------------------------------------", 20, 60);
 
-      // AI DIAGNOSIS RESULT SECTION (The requested change)
       doc.setFontSize(14);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(30, 58, 138);
-      doc.text("AI DIAGNOSIS & WELLNESS ANALYSIS", 20, 82);
+      doc.text("FULL AI CLINICAL ANALYSIS", 20, 70);
       
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(0, 0, 0);
-
-      // We extract the medical history/report content. 
-      // Note: In your system, the 'medicalHistory' field stores the full generated report text.
-      const reportContent = patient.medicalHistory || "No generated report available for this patient.";
       
-      // Clean HTML tags if present (like <br/>) for the PDF
+      // Pulling the saved report from the database
+      const reportContent = patient.medicalHistory || "No generated report available for this session.";
       const cleanReport = reportContent.replace(/<br\s*\/?>/gi, '\n').replace(/<b>/gi, '').replace(/<\/b>/gi, '');
       
       const splitReport = doc.splitTextToSize(cleanReport, 170);
-      doc.text(splitReport, 20, 92);
+      doc.text(splitReport, 20, 80);
 
-      // Save PDF
-      doc.save(`${patient.name || "Patient"}_Full_Report.pdf`);
-      toast.success("Full Report Downloaded");
-    } catch (err) {
-      console.error(err);
-      toast.error("PDF Download Failed");
-    }
+      doc.save(`${patient.name || "Patient"}_Report.pdf`);
+      toast.success("Full Report Saved");
+    } catch (err) { toast.error("PDF Failed"); }
   };
 
   const handleLogout = () => {
@@ -109,7 +83,6 @@ const DoctorDashboard = () => {
           <h1 className="text-4xl font-black text-blue-900 italic uppercase tracking-tighter">Doctor Dashboard</h1>
           <div className="flex gap-4 mt-2 font-bold uppercase text-xs">
              <span className="bg-blue-600 text-white px-3 py-1 rounded flex items-center gap-2"><User size={14}/> DR. {doctor.name || "BALAJI D"}</span>
-             <span className="text-blue-400 self-center tracking-widest">{doctor.email}</span>
           </div>
         </div>
         <button onClick={handleLogout} className="bg-red-600 text-white px-8 py-2 rounded-xl font-black flex items-center gap-2 hover:bg-red-700 shadow-lg transition-all">
@@ -123,8 +96,7 @@ const DoctorDashboard = () => {
           <div className="relative w-1/3">
             <Search className="absolute left-4 top-3 text-slate-400" size={18}/>
             <input 
-              type="text" 
-              placeholder="Search..." 
+              type="text" placeholder="Search..." 
               className="w-full pl-12 pr-4 py-2.5 rounded-2xl border-2 font-bold outline-none focus:border-blue-600 transition-all" 
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -144,37 +116,36 @@ const DoctorDashboard = () => {
             <tbody className="divide-y divide-slate-100">
               {patients.filter(p => (p.name || "").toLowerCase().includes(searchTerm.toLowerCase())).map((p, index) => (
                 <tr key={index} className="hover:bg-blue-50/50 font-bold transition-all">
-                  <td className="p-6 uppercase">{p.name || "Unnamed Patient"}</td>
-                  <td className="p-6 text-center">
-                    <span className="text-blue-600 mr-2">{p.bloodPressure || "N/A"}</span>
-                    <span className="text-red-500">{p.heartRate || "N/A"} bpm</span>
+                  <td className="p-6 uppercase">{p.name || "Unnamed"}</td>
+                  <td className="p-6 text-center text-xs">
+                    <div className="text-blue-600">BP: {p.bloodPressure || "N/A"}</div>
+                    <div className="text-red-500">HR: {p.heartRate || "N/A"} bpm</div>
                   </td>
                   <td className="p-6 text-center">
                     {showSchedule === p.email ? (
-                      <div className="flex flex-col gap-2 bg-slate-50 p-2 rounded-lg border">
-                        <input type="date" className="p-1 border rounded text-xs" onChange={(e) => setScheduleData({...scheduleData, date: e.target.value})}/>
-                        <input type="time" className="p-1 border rounded text-xs" onChange={(e) => setScheduleData({...scheduleData, time: e.target.value})}/>
+                      <div className="flex flex-col gap-2 bg-white p-2 rounded-lg border shadow-sm">
+                        <input type="date" className="p-1 border rounded text-[10px]" onChange={(e) => setScheduleData({...scheduleData, date: e.target.value})}/>
+                        <input type="time" className="p-1 border rounded text-[10px]" onChange={(e) => setScheduleData({...scheduleData, time: e.target.value})}/>
                         <div className="flex gap-2">
-                          <button onClick={() => handleConfirm(p.email)} className="bg-blue-600 text-white text-[10px] p-1 rounded flex-1">Confirm</button>
-                          <button onClick={() => setShowSchedule(null)} className="bg-slate-400 text-white text-[10px] p-1 rounded flex-1">Cancel</button>
+                          <button onClick={() => handleConfirm(p.email)} className="bg-blue-600 text-white text-[10px] p-1 rounded flex-1">Save</button>
+                          <button onClick={() => setShowSchedule(null)} className="bg-slate-400 text-white text-[10px] p-1 rounded flex-1">X</button>
                         </div>
                       </div>
                     ) : (
-                      <button onClick={() => setShowSchedule(p.email)} className="bg-blue-900 text-white px-4 py-2 rounded-xl text-xs flex items-center gap-2 mx-auto">
-                        <Clock size={14}/> SCHEDULE
+                      <button onClick={() => setShowSchedule(p.email)} className="bg-blue-900 text-white px-4 py-2 rounded-xl text-[10px] flex items-center gap-2 mx-auto">
+                        <Clock size={12}/> SCHEDULE
                       </button>
                     )}
                   </td>
                   <td className="p-6 text-center">
-                    <button onClick={() => downloadPDF(p)} className="bg-emerald-600 text-white px-5 py-2 rounded-xl font-black text-xs flex items-center gap-2 mx-auto hover:bg-emerald-700 shadow-md">
-                      <Download size={14}/> DOWNLOAD FULL REPORT
+                    <button onClick={() => downloadPDF(p)} className="bg-emerald-600 text-white px-5 py-2 rounded-xl font-black text-[10px] flex items-center gap-2 mx-auto hover:bg-emerald-700 shadow-md">
+                      <Download size={12}/> DOWNLOAD REPORT
                     </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {patients.length === 0 && <p className="p-20 text-center font-black uppercase text-slate-300">No Records Found</p>}
         </div>
       </div>
     </div>
