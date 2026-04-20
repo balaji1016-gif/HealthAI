@@ -16,8 +16,8 @@ public class WebConfig {
         CorsConfiguration config = new CorsConfiguration();
         
         config.setAllowCredentials(true);
-        // Allows Vercel to communicate with Render without origin mismatch
-        config.setAllowedOriginPatterns(Arrays.asList("*")); 
+        // Explicitly allowing your Vercel URL and patterns
+        config.setAllowedOriginPatterns(Arrays.asList("https://health-ai-flame.vercel.app", "*")); 
         config.setAllowedHeaders(Arrays.asList("Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With", "Access-Control-Allow-Origin"));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         
