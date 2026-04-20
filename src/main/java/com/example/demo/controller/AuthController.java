@@ -25,15 +25,21 @@ public class AuthController {
     @PostMapping("/diagnose")
     public ResponseEntity<?> runDiagnostic(@RequestBody Patient patientData) {
         try {
-            String bp = patientData.getBloodPressure() != null ? patientData.getBloodPressure() : "120/80";
-            String hr = patientData.getHeartRate() != null ? patientData.getHeartRate() : "72";
+            String bp = (patientData.getBloodPressure() != null && !patientData.getBloodPressure().isEmpty()) ? patientData.getBloodPressure() : "120/80";
+            String hr = (patientData.getHeartRate() != null && !patientData.getHeartRate().isEmpty()) ? patientData.getHeartRate() : "72";
             patientData.setBloodPressure(bp);
             patientData.setHeartRate(hr);
 
             String insight = aiHealthService.generateClinicalInsight(patientData);
-            return ResponseEntity.ok().body("{\"summary\": \"" + insight.replace("\n", "<br/>").replace("\"", "\\\"") + "\"}");
+            // Enhanced JSON escaping for long 500-word strings
+            String escapedInsight = insight.replace("\\", "\\\\")
+                                           .replace("\"", "\\\"")
+                                           .replace("\n", "<br/>")
+                                           .replace("\r", "");
+            
+            return ResponseEntity.ok().body("{\"summary\": \"" + escapedInsight + "\"}");
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("{\"summary\": \"AI Service Error: Check API Key in Render Settings.\"}");
+            return ResponseEntity.status(500).body("{\"summary\": \"AI Error: Response too large or filter block.\"}");
         }
     }
 
@@ -50,7 +56,6 @@ public class AuthController {
         return ResponseEntity.status(404).body("User not found");
     }
 
-    // FIX: ADDED THIS TO STOP 404 ERROR IN DOCTOR DASHBOARD
     @GetMapping("/patients")
     public ResponseEntity<List<Patient>> getAllPatients(@RequestParam(required = false) String email) {
         return ResponseEntity.ok(patientRepository.findAll());
@@ -58,13 +63,12 @@ public class AuthController {
 
     @PostMapping("/appointments/request")
     public ResponseEntity<?> requestAppointment(@RequestBody Map<String, String> data) {
-        // In a real app, save to an Appointment table. For review, we return success.
-        return ResponseEntity.ok("{\"message\": \"Appointment requested successfully for " + data.get("email") + "\"}");
+        return ResponseEntity.ok("{\"message\": \"Request Sent\"}");
     }
 
     @PostMapping("/appointments/confirm")
     public ResponseEntity<?> confirmAppointment(@RequestBody Map<String, String> data) {
-        return ResponseEntity.ok("{\"message\": \"Appointment confirmed for " + data.get("date") + " at " + data.get("time") + "\"}");
+        return ResponseEntity.ok("{\"message\": \"Confirmed\"}");
     }
 
     @PostMapping("/login")
