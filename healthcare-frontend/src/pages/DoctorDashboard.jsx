@@ -23,8 +23,10 @@ const DoctorDashboard = () => {
   const fetchPatients = async (email) => {
     try {
       const res = await getPatients(email);
-      setPatients(res.data);
-    } catch (e) { toast.error("Records Not Found"); }
+      setPatients(Array.isArray(res.data) ? res.data : []);
+    } catch (e) { 
+      toast.error("Records Not Found"); 
+    }
   };
 
   const handleConfirm = async (patientEmail) => {
@@ -43,12 +45,12 @@ const DoctorDashboard = () => {
     doc.text("HEALTH ASSESSMENT REPORT", 20, 20);
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
-    doc.text(`Patient: ${patient.name}`, 20, 40);
+    doc.text(`Patient: ${patient.name || "N/A"}`, 20, 40);
     doc.text(`BP: ${patient.bloodPressure || 'N/A'} | HR: ${patient.heartRate || 'N/A'}`, 20, 50);
     doc.text("--------------------------------------------------", 20, 60);
     const history = patient.medicalHistory || "No history.";
     doc.text(doc.splitTextToSize(history, 170), 20, 70);
-    doc.save(`${patient.name}_Report.pdf`);
+    doc.save(`${patient.name || "Patient"}_Report.pdf`);
     toast.success("PDF Saved");
   };
 
@@ -69,7 +71,7 @@ const DoctorDashboard = () => {
              <span className="text-blue-400 self-center tracking-widest">{doctor.email}</span>
           </div>
         </div>
-        <button onClick={handleLogout} className="bg-red-600 text-white px-8 py-2 rounded-xl font-black flex items-center gap-2 hover:bg-red-700 shadow-lg">
+        <button onClick={handleLogout} className="bg-red-600 text-white px-8 py-2 rounded-xl font-black flex items-center gap-2 hover:bg-red-700 shadow-lg transition-all">
           <LogOut size={18}/> LOGOUT
         </button>
       </header>
@@ -79,7 +81,12 @@ const DoctorDashboard = () => {
           <h2 className="text-2xl font-black text-slate-800 flex items-center gap-3 uppercase"><Users size={30} className="text-blue-600"/> Registered Patients</h2>
           <div className="relative w-1/3">
             <Search className="absolute left-4 top-3 text-slate-400" size={18}/>
-            <input type="text" placeholder="Search..." className="w-full pl-12 pr-4 py-2.5 rounded-2xl border-2 font-bold" onChange={(e) => setSearchTerm(e.target.value)}/>
+            <input 
+              type="text" 
+              placeholder="Search..." 
+              className="w-full pl-12 pr-4 py-2.5 rounded-2xl border-2 font-bold outline-none focus:border-blue-600 transition-all" 
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
         </div>
 
@@ -94,19 +101,22 @@ const DoctorDashboard = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {patients.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase())).map((p, index) => (
+              {patients.filter(p => (p.name || "").toLowerCase().includes(searchTerm.toLowerCase())).map((p, index) => (
                 <tr key={index} className="hover:bg-blue-50/50 font-bold transition-all">
-                  <td className="p-6 uppercase">{p.name}</td>
+                  <td className="p-6 uppercase">{p.name || "Unnamed Patient"}</td>
                   <td className="p-6 text-center">
-                    <span className="text-blue-600 mr-2">{p.bloodPressure || "120/80"}</span>
-                    <span className="text-red-500">{p.heartRate || "72"} bpm</span>
+                    <span className="text-blue-600 mr-2">{p.bloodPressure || "N/A"}</span>
+                    <span className="text-red-500">{p.heartRate || "N/A"} bpm</span>
                   </td>
                   <td className="p-6 text-center">
                     {showSchedule === p.email ? (
-                      <div className="flex flex-col gap-2">
-                        <input type="date" className="p-1 border rounded" onChange={(e) => setScheduleData({...scheduleData, date: e.target.value})}/>
-                        <input type="time" className="p-1 border rounded" onChange={(e) => setScheduleData({...scheduleData, time: e.target.value})}/>
-                        <button onClick={() => handleConfirm(p.email)} className="bg-blue-600 text-white text-xs p-2 rounded">Confirm</button>
+                      <div className="flex flex-col gap-2 bg-slate-50 p-2 rounded-lg border">
+                        <input type="date" className="p-1 border rounded text-xs" onChange={(e) => setScheduleData({...scheduleData, date: e.target.value})}/>
+                        <input type="time" className="p-1 border rounded text-xs" onChange={(e) => setScheduleData({...scheduleData, time: e.target.value})}/>
+                        <div className="flex gap-2">
+                          <button onClick={() => handleConfirm(p.email)} className="bg-blue-600 text-white text-[10px] p-1 rounded flex-1">Confirm</button>
+                          <button onClick={() => setShowSchedule(null)} className="bg-slate-400 text-white text-[10px] p-1 rounded flex-1">Cancel</button>
+                        </div>
                       </div>
                     ) : (
                       <button onClick={() => setShowSchedule(p.email)} className="bg-blue-900 text-white px-4 py-2 rounded-xl text-xs flex items-center gap-2 mx-auto">
@@ -123,7 +133,7 @@ const DoctorDashboard = () => {
               ))}
             </tbody>
           </table>
-          {patients.length === 0 && <p className="p-20 text-center font-black uppercase text-slate-300">No Records</p>}
+          {patients.length === 0 && <p className="p-20 text-center font-black uppercase text-slate-300">No Records Found</p>}
         </div>
       </div>
     </div>
