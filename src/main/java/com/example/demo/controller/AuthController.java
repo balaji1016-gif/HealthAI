@@ -10,47 +10,49 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/api/auth")
-// This is the "Magic" line. It tells the browser directly that Vercel is allowed.
-@CrossOrigin(origins = "https://health-ai-flame.vercel.app", allowedHeaders = "*", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS}, allowCredentials = "true")
+@CrossOrigin(origins = "*")
 public class AuthController {
     @Autowired private PatientRepository patientRepository;
     @Autowired private AiHealthService aiHealthService;
 
-    // This handles the invisible "Preflight" request that is causing your error
-    @RequestMapping(value = "/**", method = RequestMethod.OPTIONS)
-    public ResponseEntity<?> handleOptions() {
-        return ResponseEntity.ok().build();
-    }
-
     @PostMapping("/diagnose")
-    public ResponseEntity<?> runDiagnostic(@RequestBody Patient patientData) {
+    public ResponseEntity<?> runDiagnostic(@RequestBody Patient pData) {
         try {
-            String insight = aiHealthService.generateClinicalInsight(patientData);
-            String escaped = insight.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "<br/>");
-            return ResponseEntity.ok().body("{\"summary\": \"" + escaped + "\"}");
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("{\"summary\": \"AI Error.\"}");
-        }
-    }
+            String fullReport = aiHealthService.generateClinicalInsight(pData);
+            
+            // Logic for Recommendation & Priority
+            boolean isRisk = fullReport.toUpperCase().contains("CONTACT DOCTOR") || fullReport.toUpperCase().contains("EMERGENCY");
+            String rec = isRisk ? "Contact Doctor Immediately" : "Self-Treat Yourself";
 
-    @PutMapping("/update-vitals")
-    public ResponseEntity<?> updateVitals(@RequestBody Patient updatedData) {
-        Optional<Patient> p = patientRepository.findByEmail(updatedData.getEmail().toLowerCase().trim());
-        if (p.isPresent()) {
-            Patient patient = p.get();
-            patient.setBloodPressure(updatedData.getBloodPressure());
-            patient.setHeartRate(updatedData.getHeartRate());
-            patient.setMedicalHistory(updatedData.getMedicalHistory());
-            return ResponseEntity.ok(patientRepository.save(patient));
+            Optional<Patient> opt = patientRepository.findByEmail(pData.getEmail());
+            if (opt.isPresent()) {
+                Patient p = opt.get();
+                p.setBloodPressure(pData.getBloodPressure());
+                p.setHeartRate(pData.getHeartRate());
+                p.setDoubts(pData.getDoubts());
+                p.setMedicalHistory(fullReport);
+                p.setAiRecommendation(rec);
+                p.setHighPriority(isRisk);
+
+                // Chart Tracking: format "BPM,Timestamp|"
+                String entry = pData.getHeartRate() + "," + System.currentTimeMillis() + "|";
+                String history = p.getVitalsHistory() == null ? "" : p.getVitalsHistory();
+                p.setVitalsHistory(history + entry);
+
+                Patient saved = patientRepository.save(p);
+                return ResponseEntity.ok(saved);
+            }
+            return ResponseEntity.status(404).build();
+        } catch (Exception e) {
+            return ResponseEntity.status(500).build();
         }
-        return ResponseEntity.status(404).build();
     }
 
     @GetMapping("/patients")
     public ResponseEntity<List<Patient>> getAll() { 
         return ResponseEntity.ok(patientRepository.findAll()); 
     }
-    
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Patient l) {
         Optional<Patient> p = patientRepository.findByEmail(l.getEmail().toLowerCase().trim());
