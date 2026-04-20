@@ -1,7 +1,6 @@
-// Keep your imports exactly as they are
 import React, { useEffect, useState } from 'react';
-import { getAiAssessment, updateVitals } from '../api';
-import { LogOut, User, BrainCircuit, RefreshCw } from 'lucide-react';
+import { getAiAssessment, bookAppointment } from '../api';
+import { LogOut, User, BrainCircuit, RefreshCw, CalendarCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const PatientDashboard = () => {
@@ -24,12 +23,21 @@ const PatientDashboard = () => {
     window.location.href = '/login';
   };
 
+  const handleAppointmentRequest = async () => {
+    try {
+      await bookAppointment({ email: patient.email, name: patient.name });
+      toast.success("Appointment Request Sent to Doctor!");
+    } catch (e) {
+      toast.error("Failed to send request.");
+    }
+  };
+
   const generateReport = async () => {
     setLoading(true);
     try {
       const res = await getAiAssessment({ email: patient.email, bloodPressure: vitals.bp, heartRate: vitals.hr, medicalHistory: vitals.doubt });
       setDiagnosis(res.data.summary);
-    } catch (e) { toast.error("AI 500 Error: Check Safety Settings"); }
+    } catch (e) { toast.error("AI Safety Block: Check properties"); }
     finally { setLoading(false); }
   };
 
@@ -45,9 +53,14 @@ const PatientDashboard = () => {
              <span className="text-blue-400 self-center">{patient.email}</span>
           </div>
         </div>
-        <button onClick={handleLogout} className="bg-red-600 text-white px-6 py-2 rounded-lg font-black flex items-center gap-2 shadow-lg">
-          <LogOut size={18}/> LOGOUT
-        </button>
+        <div className="flex gap-4">
+          <button onClick={handleAppointmentRequest} className="bg-blue-900 text-white px-6 py-2 rounded-lg font-black flex items-center gap-2 shadow-lg hover:bg-black transition-all">
+            <CalendarCheck size={18}/> REQUEST APPOINTMENT
+          </button>
+          <button onClick={handleLogout} className="bg-red-600 text-white px-6 py-2 rounded-lg font-black flex items-center gap-2 shadow-lg">
+            <LogOut size={18}/> LOGOUT
+          </button>
+        </div>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
