@@ -13,7 +13,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(originPatterns = "*", allowCredentials = "true", allowedHeaders = "*")
 public class AuthController {
 
     @Autowired
@@ -25,21 +24,11 @@ public class AuthController {
     @PostMapping("/diagnose")
     public ResponseEntity<?> runDiagnostic(@RequestBody Patient patientData) {
         try {
-            String bp = (patientData.getBloodPressure() != null) ? patientData.getBloodPressure() : "120/80";
-            String hr = (patientData.getHeartRate() != null) ? patientData.getHeartRate() : "72";
-            patientData.setBloodPressure(bp);
-            patientData.setHeartRate(hr);
-
             String insight = aiHealthService.generateClinicalInsight(patientData);
-            
-            String escapedInsight = insight.replace("\\", "\\\\")
-                                           .replace("\"", "\\\"")
-                                           .replace("\n", "<br/>")
-                                           .replace("\r", "");
-            
+            String escapedInsight = insight.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "<br/>");
             return ResponseEntity.ok().body("{\"summary\": \"" + escapedInsight + "\"}");
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("{\"summary\": \"Analysis Error.\"}");
+            return ResponseEntity.status(500).body("{\"summary\": \"Error processing report.\"}");
         }
     }
 
@@ -50,14 +39,14 @@ public class AuthController {
             Patient patient = p.get();
             patient.setBloodPressure(updatedData.getBloodPressure());
             patient.setHeartRate(updatedData.getHeartRate());
-            patient.setMedicalHistory(updatedData.getMedicalHistory()); // Report saved here
+            patient.setMedicalHistory(updatedData.getMedicalHistory());
             return ResponseEntity.ok(patientRepository.save(patient));
         }
         return ResponseEntity.status(404).body("User not found");
     }
 
     @GetMapping("/patients")
-    public ResponseEntity<List<Patient>> getAllPatients(@RequestParam(required = false) String email) {
+    public ResponseEntity<List<Patient>> getAllPatients() {
         return ResponseEntity.ok(patientRepository.findAll());
     }
 
@@ -66,10 +55,5 @@ public class AuthController {
         Optional<Patient> p = patientRepository.findByEmail(loginRequest.getEmail().toLowerCase().trim());
         if (p.isPresent() && p.get().getPassword().equals(loginRequest.getPassword())) return ResponseEntity.ok(p.get());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
-    }
-    
-    @PostMapping("/appointments/confirm")
-    public ResponseEntity<?> confirmAppointment(@RequestBody Map<String, String> data) {
-        return ResponseEntity.ok("{\"message\": \"Success\"}");
     }
 }
