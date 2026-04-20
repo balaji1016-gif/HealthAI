@@ -32,7 +32,6 @@ public class AuthController {
 
             String insight = aiHealthService.generateClinicalInsight(patientData);
             
-            // CLEANING FOR LARGE TEXT: This prevents the 'JSON parse error' in React
             String escapedInsight = insight.replace("\\", "\\\\")
                                            .replace("\"", "\\\"")
                                            .replace("\n", "<br/>")
@@ -40,7 +39,7 @@ public class AuthController {
             
             return ResponseEntity.ok().body("{\"summary\": \"" + escapedInsight + "\"}");
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("{\"summary\": \"Error: Data payload too large for current buffer.\"}");
+            return ResponseEntity.status(500).body("{\"summary\": \"Analysis Error.\"}");
         }
     }
 
@@ -51,7 +50,7 @@ public class AuthController {
             Patient patient = p.get();
             patient.setBloodPressure(updatedData.getBloodPressure());
             patient.setHeartRate(updatedData.getHeartRate());
-            patient.setMedicalHistory(updatedData.getMedicalHistory());
+            patient.setMedicalHistory(updatedData.getMedicalHistory()); // Report saved here
             return ResponseEntity.ok(patientRepository.save(patient));
         }
         return ResponseEntity.status(404).body("User not found");
@@ -62,20 +61,15 @@ public class AuthController {
         return ResponseEntity.ok(patientRepository.findAll());
     }
 
-    @PostMapping("/appointments/request")
-    public ResponseEntity<?> requestAppointment(@RequestBody Map<String, String> data) {
-        return ResponseEntity.ok("{\"message\": \"Success\"}");
-    }
-
-    @PostMapping("/appointments/confirm")
-    public ResponseEntity<?> confirmAppointment(@RequestBody Map<String, String> data) {
-        return ResponseEntity.ok("{\"message\": \"Confirmed\"}");
-    }
-
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Patient loginRequest) {
         Optional<Patient> p = patientRepository.findByEmail(loginRequest.getEmail().toLowerCase().trim());
         if (p.isPresent() && p.get().getPassword().equals(loginRequest.getPassword())) return ResponseEntity.ok(p.get());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
+    }
+    
+    @PostMapping("/appointments/confirm")
+    public ResponseEntity<?> confirmAppointment(@RequestBody Map<String, String> data) {
+        return ResponseEntity.ok("{\"message\": \"Success\"}");
     }
 }
