@@ -7,10 +7,8 @@ import lombok.Data;
 @Table(name = "patients")
 @Data
 public class Patient {
-
     @Id
     private String email; 
-
     private String name;
     private String password;
     private int age;
@@ -20,13 +18,17 @@ public class Patient {
     @Column(columnDefinition = "TEXT")
     private String medicalHistory;
 
+    @Column(columnDefinition = "TEXT")
+    private String doubts;
+
+    @Column(columnDefinition = "TEXT")
+    private String vitalsHistory; // Stores heart rate trends for the chart
+
+    private String aiRecommendation; 
+    private boolean highPriority = false; 
     private String role = "PATIENT";
 
-    public String getId() {
-        return this.email;
-    }
-
-    // Getters and Setters
+    // Standard Getters/Setters
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
     public String getName() { return name; }
@@ -41,6 +43,14 @@ public class Patient {
     public void setHeartRate(String heartRate) { this.heartRate = heartRate; }
     public String getMedicalHistory() { return medicalHistory; }
     public void setMedicalHistory(String medicalHistory) { this.medicalHistory = medicalHistory; }
+    public String getDoubts() { return doubts; }
+    public void setDoubts(String doubts) { this.doubts = doubts; }
+    public String getVitalsHistory() { return vitalsHistory; }
+    public void setVitalsHistory(String vitalsHistory) { this.vitalsHistory = vitalsHistory; }
+    public String getAiRecommendation() { return aiRecommendation; }
+    public void setAiRecommendation(String aiRecommendation) { this.aiRecommendation = aiRecommendation; }
+    public boolean isHighPriority() { return highPriority; }
+    public void setHighPriority(boolean highPriority) { this.highPriority = highPriority; }
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
 }
