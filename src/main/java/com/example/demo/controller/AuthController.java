@@ -25,14 +25,14 @@ public class AuthController {
     @PostMapping("/diagnose")
     public ResponseEntity<?> runDiagnostic(@RequestBody Patient patientData) {
         try {
-            String bp = (patientData.getBloodPressure() != null && !patientData.getBloodPressure().isEmpty()) ? patientData.getBloodPressure() : "120/80";
-            String hr = (patientData.getHeartRate() != null && !patientData.getHeartRate().isEmpty()) ? patientData.getHeartRate() : "72";
+            String bp = (patientData.getBloodPressure() != null) ? patientData.getBloodPressure() : "120/80";
+            String hr = (patientData.getHeartRate() != null) ? patientData.getHeartRate() : "72";
             patientData.setBloodPressure(bp);
             patientData.setHeartRate(hr);
 
             String insight = aiHealthService.generateClinicalInsight(patientData);
             
-            // Clean the insight string for JSON transfer
+            // CLEANING FOR LARGE TEXT: This prevents the 'JSON parse error' in React
             String escapedInsight = insight.replace("\\", "\\\\")
                                            .replace("\"", "\\\"")
                                            .replace("\n", "<br/>")
@@ -40,7 +40,7 @@ public class AuthController {
             
             return ResponseEntity.ok().body("{\"summary\": \"" + escapedInsight + "\"}");
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("{\"summary\": \"AI Error: Response too large or filter block.\"}");
+            return ResponseEntity.status(500).body("{\"summary\": \"Error: Data payload too large for current buffer.\"}");
         }
     }
 
@@ -64,7 +64,7 @@ public class AuthController {
 
     @PostMapping("/appointments/request")
     public ResponseEntity<?> requestAppointment(@RequestBody Map<String, String> data) {
-        return ResponseEntity.ok("{\"message\": \"Request Sent\"}");
+        return ResponseEntity.ok("{\"message\": \"Success\"}");
     }
 
     @PostMapping("/appointments/confirm")
