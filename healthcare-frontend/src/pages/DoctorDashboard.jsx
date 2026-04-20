@@ -39,19 +39,60 @@ const DoctorDashboard = () => {
   };
 
   const downloadPDF = (patient) => {
-    const doc = new jsPDF();
-    doc.setFontSize(22);
-    doc.setTextColor(30, 58, 138);
-    doc.text("HEALTH ASSESSMENT REPORT", 20, 20);
-    doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0);
-    doc.text(`Patient: ${patient.name || "N/A"}`, 20, 40);
-    doc.text(`BP: ${patient.bloodPressure || 'N/A'} | HR: ${patient.heartRate || 'N/A'}`, 20, 50);
-    doc.text("--------------------------------------------------", 20, 60);
-    const history = patient.medicalHistory || "No history.";
-    doc.text(doc.splitTextToSize(history, 170), 20, 70);
-    doc.save(`${patient.name || "Patient"}_Report.pdf`);
-    toast.success("PDF Saved");
+    try {
+      const doc = new jsPDF();
+      
+      // Header Section
+      doc.setFontSize(22);
+      doc.setTextColor(30, 58, 138); // Your Theme Blue
+      doc.text("HEALTH ASSESSMENT REPORT", 20, 20);
+      
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(`Generated on: ${new Date().toLocaleString()}`, 20, 28);
+      doc.text("-----------------------------------------------------------------------------------------", 20, 32);
+
+      // Patient Info Section
+      doc.setFontSize(14);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont("helvetica", "bold");
+      doc.text("PATIENT INFORMATION", 20, 42);
+      
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Name: ${patient.name || "N/A"}`, 20, 50);
+      doc.text(`Email: ${patient.email}`, 20, 57);
+      doc.text(`Vitals: BP ${patient.bloodPressure || 'N/A'} | HR ${patient.heartRate || 'N/A'}`, 20, 64);
+      
+      doc.text("-----------------------------------------------------------------------------------------", 20, 72);
+
+      // AI DIAGNOSIS RESULT SECTION (The requested change)
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(30, 58, 138);
+      doc.text("AI DIAGNOSIS & WELLNESS ANALYSIS", 20, 82);
+      
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(0, 0, 0);
+
+      // We extract the medical history/report content. 
+      // Note: In your system, the 'medicalHistory' field stores the full generated report text.
+      const reportContent = patient.medicalHistory || "No generated report available for this patient.";
+      
+      // Clean HTML tags if present (like <br/>) for the PDF
+      const cleanReport = reportContent.replace(/<br\s*\/?>/gi, '\n').replace(/<b>/gi, '').replace(/<\/b>/gi, '');
+      
+      const splitReport = doc.splitTextToSize(cleanReport, 170);
+      doc.text(splitReport, 20, 92);
+
+      // Save PDF
+      doc.save(`${patient.name || "Patient"}_Full_Report.pdf`);
+      toast.success("Full Report Downloaded");
+    } catch (err) {
+      console.error(err);
+      toast.error("PDF Download Failed");
+    }
   };
 
   const handleLogout = () => {
@@ -126,7 +167,7 @@ const DoctorDashboard = () => {
                   </td>
                   <td className="p-6 text-center">
                     <button onClick={() => downloadPDF(p)} className="bg-emerald-600 text-white px-5 py-2 rounded-xl font-black text-xs flex items-center gap-2 mx-auto hover:bg-emerald-700 shadow-md">
-                      <Download size={14}/> PDF
+                      <Download size={14}/> DOWNLOAD FULL REPORT
                     </button>
                   </td>
                 </tr>
@@ -139,4 +180,5 @@ const DoctorDashboard = () => {
     </div>
   );
 };
+
 export default DoctorDashboard;
