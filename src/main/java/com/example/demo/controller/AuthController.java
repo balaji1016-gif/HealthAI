@@ -31,7 +31,8 @@ public class AuthController {
             patientData.setHeartRate(hr);
 
             String insight = aiHealthService.generateClinicalInsight(patientData);
-            // Enhanced JSON escaping for long 500-word strings
+            
+            // Clean the insight string for JSON transfer
             String escapedInsight = insight.replace("\\", "\\\\")
                                            .replace("\"", "\\\"")
                                            .replace("\n", "<br/>")
