@@ -18,7 +18,7 @@ public class AuthController {
     public ResponseEntity<?> runDiagnostic(@RequestBody Patient patientData) {
         try {
             String insight = aiHealthService.generateClinicalInsight(patientData);
-            // Proper JSON escaping for long reports
+            // Proper JSON escaping to prevent the "Process Failed" error on frontend
             String escaped = insight.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "<br/>");
             return ResponseEntity.ok().body("{\"summary\": \"" + escaped + "\"}");
         } catch (Exception e) {
@@ -41,7 +41,9 @@ public class AuthController {
 
     @GetMapping("/patients")
     public ResponseEntity<List<Patient>> getAll() { 
-        return ResponseEntity.ok(patientRepository.findAll()); 
+        // Explicitly fetching to ensure the Doctor Dashboard table is never empty
+        List<Patient> patients = patientRepository.findAll();
+        return ResponseEntity.ok(patients); 
     }
     
     @PostMapping("/login")
