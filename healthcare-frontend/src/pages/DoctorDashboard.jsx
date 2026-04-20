@@ -22,7 +22,7 @@ const DoctorDashboard = () => {
   const fetchPatients = async () => {
     try {
       const res = await axios.get('https://health-ai-backend-q09o.onrender.com/api/auth/patients');
-      setPatients(res.data);
+      setPatients(Array.isArray(res.data) ? res.data : []);
     } catch (e) { toast.error("Fetch Error"); }
   };
 
@@ -32,8 +32,9 @@ const DoctorDashboard = () => {
     doc.setTextColor(30, 58, 138);
     doc.text("HEALTH ASSESSMENT REPORT", 20, 20);
     doc.setFontSize(12);
+    doc.setTextColor(0,0,0);
     doc.text(`Patient: ${patient.name}`, 20, 40);
-    doc.text(`Vitals: BP ${patient.bloodPressure} | HR ${patient.heartRate} bpm`, 20, 50);
+    doc.text(`Vitals: BP ${patient.bloodPressure || 'N/A'} | HR ${patient.heartRate || 'N/A'} bpm`, 20, 50);
     const reportContent = patient.medicalHistory || "No report available.";
     const cleanReport = reportContent.replace(/<br\s*\/?>/gi, '\n').replace(/<b>/gi, '').replace(/<\/b>/gi, '');
     const splitReport = doc.splitTextToSize(cleanReport, 170);
@@ -53,7 +54,7 @@ const DoctorDashboard = () => {
             <span className="font-black text-slate-400 flex items-center gap-1"><Mail size={16}/> {doctor.email}</span>
           </div>
         </div>
-        <button onClick={() => { localStorage.removeItem('user'); window.location.href='/login'; }} className="bg-red-600 text-white px-8 py-2 rounded-xl font-black flex items-center gap-2">
+        <button onClick={() => { localStorage.removeItem('user'); window.location.href='/login'; }} className="bg-red-600 text-white px-8 py-2 rounded-xl font-black flex items-center gap-2 hover:bg-red-700 transition-all">
           <LogOut size={18}/> LOGOUT
         </button>
       </header>
@@ -64,7 +65,7 @@ const DoctorDashboard = () => {
           <input type="text" placeholder="Search..." className="w-1/3 p-3 rounded-2xl border-2 font-black focus:border-blue-600 outline-none" onChange={(e) => setSearchTerm(e.target.value)} />
         </div>
         <table className="w-full text-left">
-          <thead className="bg-blue-900 text-white uppercase text-xs">
+          <thead className="bg-blue-900 text-white uppercase text-xs tracking-widest">
             <tr>
               <th className="p-6">Patient Name</th>
               <th className="p-6 text-center">Vitals (Bold)</th>
@@ -82,19 +83,19 @@ const DoctorDashboard = () => {
                 </td>
                 <td className="p-6 text-center font-black">
                   {showSchedule === p.email ? (
-                    <div className="flex flex-col gap-2 p-2 bg-slate-50 rounded-xl">
+                    <div className="flex flex-col gap-2 p-2 bg-slate-50 rounded-xl border">
                       <input type="date" className="p-1 border rounded font-bold text-xs" onChange={(e) => setScheduleData({...scheduleData, date: e.target.value})}/>
                       <input type="time" className="p-1 border rounded font-bold text-xs" onChange={(e) => setScheduleData({...scheduleData, time: e.target.value})}/>
-                      <button onClick={() => {toast.success("Scheduled!"); setShowSchedule(null);}} className="bg-blue-600 text-white text-[10px] py-1 rounded">Save</button>
+                      <button onClick={() => {toast.success("Scheduled!"); setShowSchedule(null);}} className="bg-blue-600 text-white text-[10px] py-1 rounded font-black">Save</button>
                     </div>
                   ) : (
-                    <button onClick={() => setShowSchedule(p.email)} className="bg-blue-900 text-white px-4 py-2 rounded-xl text-xs flex items-center gap-2 mx-auto font-black">
+                    <button onClick={() => setShowSchedule(p.email)} className="bg-blue-900 text-white px-4 py-2 rounded-xl text-xs flex items-center gap-2 mx-auto font-black hover:bg-slate-800">
                       <Clock size={14}/> SCHEDULE
                     </button>
                   )}
                 </td>
                 <td className="p-6 text-center">
-                  <button onClick={() => downloadPDF(p)} className="bg-emerald-600 text-white px-5 py-2 rounded-xl font-black text-xs flex items-center gap-2 mx-auto">
+                  <button onClick={() => downloadPDF(p)} className="bg-emerald-600 text-white px-5 py-2 rounded-xl font-black text-xs flex items-center gap-2 mx-auto hover:bg-emerald-700 transition-all shadow-md">
                     <Download size={14}/> DOWNLOAD REPORT
                   </button>
                 </td>
