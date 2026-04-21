@@ -22,13 +22,16 @@ public class Patient {
     private String doubts;
 
     @Column(columnDefinition = "TEXT")
-    private String vitalsHistory = ""; // Initialize as empty string
+    private String vitalsHistory = ""; 
 
     private String aiRecommendation; 
     
-    // Using Boolean (Object) ensures no primitive "null" crashes
     private Boolean highPriority = false; 
     private String role = "PATIENT";
+
+    // NEW FIELDS FOR APPOINTMENT SYNC
+    private String appointmentDate;
+    private String appointmentTime;
 
     // Standard Getters/Setters
     public String getEmail() { return email; }
@@ -55,4 +58,8 @@ public class Patient {
     public void setHighPriority(Boolean highPriority) { this.highPriority = highPriority; }
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
+    public String getAppointmentDate() { return appointmentDate; }
+    public void setAppointmentDate(String appointmentDate) { this.appointmentDate = appointmentDate; }
+    public String getAppointmentTime() { return appointmentTime; }
+    public void setAppointmentTime(String appointmentTime) { this.appointmentTime = appointmentTime; }
 }
