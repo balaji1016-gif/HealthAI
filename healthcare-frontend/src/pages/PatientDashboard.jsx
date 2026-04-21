@@ -100,24 +100,12 @@ const PatientDashboard = () => {
                 <Send size={18} className="text-indigo-600" /> Update Vitals
               </h4>
               <div className="space-y-4">
-                <input type="text" placeholder="BP (120/80)" className="w-full p-4 bg-slate-50 border rounded-xl font-bold outline-none" onChange={(e) => setVitals({...vitals, bloodPressure: e.target.value})}/>
-                <input type="text" placeholder="Heart Rate (BPM)" className="w-full p-4 bg-slate-50 border rounded-xl font-bold outline-none" onChange={(e) => setVitals({...vitals, heartRate: e.target.value})}/>
-                <textarea placeholder="Symptoms/Doubts" className="w-full p-4 bg-slate-50 border rounded-xl font-bold outline-none h-24" onChange={(e) => setVitals({...vitals, doubts: e.target.value})}></textarea>
+                <input type="text" placeholder="BP (120/80)" className="w-full p-4 bg-slate-50 border rounded-xl font-bold outline-none shadow-inner" onChange={(e) => setVitals({...vitals, bloodPressure: e.target.value})}/>
+                <input type="text" placeholder="Heart Rate (BPM)" className="w-full p-4 bg-slate-50 border rounded-xl font-bold outline-none shadow-inner" onChange={(e) => setVitals({...vitals, heartRate: e.target.value})}/>
+                <textarea placeholder="Symptoms/Doubts" className="w-full p-4 bg-slate-50 border rounded-xl font-bold outline-none h-24 shadow-inner" onChange={(e) => setVitals({...vitals, doubts: e.target.value})}></textarea>
                 <button onClick={handleAiRun} disabled={loading} className="w-full py-4 bg-indigo-600 text-white rounded-xl font-black uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center justify-center gap-2">
                   {loading ? "Analyzing..." : <><Brain size={20} /> Run AI Button</>}
                 </button>
-              </div>
-            </div>
-          </div>
-
-          {/* RIGHT COLUMN: REPORT & CHART */}
-          <div className="col-span-12 lg:col-span-8 space-y-8">
-            {/* AI REPORT */}
-            <div className="bg-indigo-900 rounded-[2.5rem] p-8 text-white shadow-xl">
-              <h4 className="text-lg font-black mb-6 flex items-center gap-2"><Activity size={18} /> AI Analysis</h4>
-              <div className="bg-indigo-800/40 rounded-2xl p-6 border border-indigo-700/50">
-                <p className="text-xl font-black mb-2">{user.aiRecommendation || "Awaiting Data"}</p>
-                <p className="text-indigo-200 italic text-sm leading-relaxed">"{user.medicalHistory || "Please submit vitals to generate your clinical insight."}"</p>
               </div>
             </div>
 
@@ -136,6 +124,37 @@ const PatientDashboard = () => {
                     <Line type="monotone" dataKey="bpm" stroke="#4f46e5" strokeWidth={3} dot={{ r: 4, fill: '#4f46e5' }} />
                   </LineChart>
                 </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT COLUMN: FULL PAGE AI REPORT */}
+          <div className="col-span-12 lg:col-span-8 space-y-8">
+            <div className="bg-indigo-900 rounded-[2.5rem] p-10 text-white shadow-2xl min-h-[800px]">
+              <div className="flex justify-between items-center mb-8 border-b border-indigo-700 pb-6">
+                <h4 className="text-2xl font-black flex items-center gap-3">
+                    <Activity size={28} className="text-indigo-400" /> AI Diagnostic Report
+                </h4>
+                <div className="text-right">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Generated For</p>
+                    <p className="text-sm font-bold">{user.name}</p>
+                </div>
+              </div>
+              
+              {/* UPDATED: Renders the AI's HTML properly and styles for full page */}
+              <div className="bg-indigo-800/30 rounded-3xl p-8 border border-indigo-700/50">
+                <div 
+                  className="text-indigo-50 text-lg leading-relaxed font-medium text-justify space-y-4"
+                  dangerouslySetInnerHTML={{ 
+                    __html: user.medicalHistory || "Please submit your vitals to generate a full clinical analysis report." 
+                  }}
+                />
+              </div>
+              
+              {/* Added a formal recommendation badge */}
+              <div className="mt-8 p-6 bg-white/5 rounded-2xl border border-white/10">
+                <p className="text-indigo-300 font-black text-xs uppercase tracking-widest mb-2">AI Summary Recommendation</p>
+                <p className="text-2xl font-black text-emerald-400">{user.aiRecommendation || "Pending Analysis"}</p>
               </div>
             </div>
           </div>
