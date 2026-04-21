@@ -22,10 +22,12 @@ public class Patient {
     private String doubts;
 
     @Column(columnDefinition = "TEXT")
-    private String vitalsHistory; // Stores heart rate trends for the chart
+    private String vitalsHistory; 
 
     private String aiRecommendation; 
-    private boolean highPriority = false; 
+    
+    // FIX: Changed from boolean to Boolean to handle NULLs in database
+    private Boolean highPriority = false; 
     private String role = "PATIENT";
 
     // Standard Getters/Setters
@@ -49,8 +51,8 @@ public class Patient {
     public void setVitalsHistory(String vitalsHistory) { this.vitalsHistory = vitalsHistory; }
     public String getAiRecommendation() { return aiRecommendation; }
     public void setAiRecommendation(String aiRecommendation) { this.aiRecommendation = aiRecommendation; }
-    public boolean isHighPriority() { return highPriority; }
-    public void setHighPriority(boolean highPriority) { this.highPriority = highPriority; }
+    public Boolean isHighPriority() { return highPriority; }
+    public void setHighPriority(Boolean highPriority) { this.highPriority = highPriority; }
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
 }
