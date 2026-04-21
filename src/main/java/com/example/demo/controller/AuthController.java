@@ -10,28 +10,22 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "*")
+// REMOVED @CrossOrigin here because it is handled in WebConfig.java
 public class AuthController {
     @Autowired private PatientRepository patientRepository;
     @Autowired private AiHealthService aiHealthService;
 
-    // FIX: Added Registration Endpoint
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Patient patient) {
         try {
-            // Check if user already exists
             if (patientRepository.findByEmail(patient.getEmail().toLowerCase().trim()).isPresent()) {
                 return ResponseEntity.status(400).body(Map.of("message", "Email already registered"));
             }
-            
-            // Set defaults for new registration
             patient.setEmail(patient.getEmail().toLowerCase().trim());
-            patient.setVitalsHistory(""); // Initialize empty for the chart logic later
-            
-            Patient savedPatient = patientRepository.save(patient);
-            return ResponseEntity.status(201).body(savedPatient);
+            patient.setVitalsHistory(""); 
+            return ResponseEntity.status(201).body(patientRepository.save(patient));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("message", "Database Error: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("message", "Error: " + e.getMessage()));
         }
     }
 
@@ -61,13 +55,10 @@ public class AuthController {
                 p.setAiRecommendation(rec);
                 p.setHighPriority(isRisk);
 
-                // Chart Tracking logic
                 String entry = pData.getHeartRate() + "," + System.currentTimeMillis() + "|";
-                String history = p.getVitalsHistory() == null ? "" : p.getVitalsHistory();
-                p.setVitalsHistory(history + entry);
+                p.setVitalsHistory((p.getVitalsHistory() == null ? "" : p.getVitalsHistory()) + entry);
 
-                Patient saved = patientRepository.save(p);
-                return ResponseEntity.ok(saved);
+                return ResponseEntity.ok(patientRepository.save(p));
             }
             return ResponseEntity.status(404).build();
         } catch (Exception e) {
