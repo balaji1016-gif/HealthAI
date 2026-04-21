@@ -15,12 +15,39 @@ public class AuthController {
     @Autowired private PatientRepository patientRepository;
     @Autowired private AiHealthService aiHealthService;
 
+    // FIX: Added Registration Endpoint
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody Patient patient) {
+        try {
+            // Check if user already exists
+            if (patientRepository.findByEmail(patient.getEmail().toLowerCase().trim()).isPresent()) {
+                return ResponseEntity.status(400).body(Map.of("message", "Email already registered"));
+            }
+            
+            // Set defaults for new registration
+            patient.setEmail(patient.getEmail().toLowerCase().trim());
+            patient.setVitalsHistory(""); // Initialize empty for the chart logic later
+            
+            Patient savedPatient = patientRepository.save(patient);
+            return ResponseEntity.status(201).body(savedPatient);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("message", "Database Error: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody Patient l) {
+        Optional<Patient> p = patientRepository.findByEmail(l.getEmail().toLowerCase().trim());
+        if (p.isPresent() && p.get().getPassword().equals(l.getPassword())) {
+            return ResponseEntity.ok(p.get());
+        }
+        return ResponseEntity.status(401).build();
+    }
+
     @PostMapping("/diagnose")
     public ResponseEntity<?> runDiagnostic(@RequestBody Patient pData) {
         try {
             String fullReport = aiHealthService.generateClinicalInsight(pData);
-            
-            // Logic for Recommendation & Priority
             boolean isRisk = fullReport.toUpperCase().contains("CONTACT DOCTOR") || fullReport.toUpperCase().contains("EMERGENCY");
             String rec = isRisk ? "Contact Doctor Immediately" : "Self-Treat Yourself";
 
@@ -34,7 +61,7 @@ public class AuthController {
                 p.setAiRecommendation(rec);
                 p.setHighPriority(isRisk);
 
-                // Chart Tracking: format "BPM,Timestamp|"
+                // Chart Tracking logic
                 String entry = pData.getHeartRate() + "," + System.currentTimeMillis() + "|";
                 String history = p.getVitalsHistory() == null ? "" : p.getVitalsHistory();
                 p.setVitalsHistory(history + entry);
@@ -51,12 +78,5 @@ public class AuthController {
     @GetMapping("/patients")
     public ResponseEntity<List<Patient>> getAll() { 
         return ResponseEntity.ok(patientRepository.findAll()); 
-    }
-
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Patient l) {
-        Optional<Patient> p = patientRepository.findByEmail(l.getEmail().toLowerCase().trim());
-        if (p.isPresent() && p.get().getPassword().equals(l.getPassword())) return ResponseEntity.ok(p.get());
-        return ResponseEntity.status(401).build();
     }
 }
