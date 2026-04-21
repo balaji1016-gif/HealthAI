@@ -22,11 +22,11 @@ public class Patient {
     private String doubts;
 
     @Column(columnDefinition = "TEXT")
-    private String vitalsHistory; 
+    private String vitalsHistory = ""; // Initialize as empty string
 
     private String aiRecommendation; 
     
-    // FIX: Changed from boolean to Boolean to handle NULLs in database
+    // Using Boolean (Object) ensures no primitive "null" crashes
     private Boolean highPriority = false; 
     private String role = "PATIENT";
 
